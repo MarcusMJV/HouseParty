@@ -1,0 +1,9 @@
+POST http://localhost:8080/room/create
+Content-Type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InZvcnN0ZXJtYXJjdXNAZ21haWwuY29tIiwiZXhwIjoxNzM4MjcxNzIyLCJ1c2VySWQiOjEsInVzZXJuYW1lIjoibWFyY3VzX3ZvcnN0ZXIifQ.q63o9tFYdsSzi3wS0fOPcZM40wCYia2Qbas39RxBp60
+
+{
+    "name": "My Music Room",
+    "description": "Come and listen to some music",
+    "public": true
+}

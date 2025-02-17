@@ -1,0 +1,2 @@
+DELETE http://localhost:8080/room/delete/87d769b1-95b4-44fe-9ebd-a74aac313a17
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InZvcnN0ZXJtYXJjdXNAZ21haWwuY29tIiwiZXhwIjoxNzM3NzQ3MDAwLCJ1c2VySWQiOjEsInVzZXJuYW1lIjoibWFyY3VzX3ZvcnN0ZXIifQ.XJOPEaTr9XZuJBODilS1Ob8-vUM-3rWPhJqAc7rfc6Y
