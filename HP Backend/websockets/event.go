@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
+	"houseparty.com/config"
 	"houseparty.com/models"
 	"houseparty.com/services"
 )
@@ -43,6 +44,7 @@ type AddSongEvent struct {
 type AddSongResultEvent struct {
 	From string `json:"from"`
 	Song *models.Song `json:"song"`
+	ApiToken string `json:"api_token"`
 }
 
 //Define Event Handlers
@@ -121,7 +123,12 @@ func AddSong(event Event, c *Client) error {
 
 	c.Manager.AddSongToPlaylist(song, c.RoomID)
 
-	responsePayload, err := json.Marshal(AddSongResultEvent{From: addSongEvent.From, Song: song})
+	apiToken, err := config.GetSpotifyToken()
+	if err != nil {
+		return err
+	}
+
+	responsePayload, err := json.Marshal(AddSongResultEvent{From: addSongEvent.From, Song: song, ApiToken: apiToken.AccessToken})
 	if err != nil {
 		return err
 	}

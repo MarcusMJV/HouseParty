@@ -7,19 +7,20 @@ import HousePartyLogo from '@/components/HousePartyLogo.vue'
 import type { Song } from '@/types/song'
 import SongPlayer from '@/components/SongPlayer.vue';
 
-const route = useRoute()
-const socket = ref<WebSocket | null>(null)
-const roomId = route.params.id as string
-const user = useUserStore()
-const messages = ref<string[]>([])
-const usersCount = ref(1)
-const currentSong = ref<Song>()
-const queuedSongs = ref<Song[]>([])
-const showSearchPanel = ref(false)
-const searchQuery = ref('')
+const route = useRoute();
+const socket = ref<WebSocket | null>(null);
+const roomId = route.params.id as string;
+const user = useUserStore();
+const messages = ref<string[]>([]);
+const usersCount = ref(1);
+const currentSong = ref<Song>();
+const queuedSongs = ref<Song[]>([]);
+const showSearchPanel = ref(false);
+const searchQuery = ref('');
 const searchResults = ref<Song[]>([])
 const containerRef = ref<HTMLElement | null>(null);
 const shouldScroll = ref(false);
+const apiToken = ref<string>();
 
 watch(queuedSongs, () => {
   nextTick(checkHeight);
@@ -122,6 +123,8 @@ const handleSocketMessage = (message) => {
       } else {
         queuedSongs.value.push(message.payload.song)
       }
+
+      apiToken.value = message.payload.api_token
       break
 
     case 'room-information':
@@ -130,7 +133,7 @@ const handleSocketMessage = (message) => {
       if (message.payload.current_song.id != '') {
         currentSong.value = message.payload.current_song
       }
-      if (message.payload.playlist.length > 0) {
+      if (message.payload.playlist?.length > 0) {
         queuedSongs.value = message.payload.playlist
       }
       usersCount.value = message.payload.user_count
@@ -182,7 +185,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <SongPlayer v-if="currentSong" :song="currentSong" />
+    <SongPlayer v-if="currentSong && apiToken" :song="currentSong" :apiToken="apiToken"/>
 
     <div class="flex flex-col items-center mt-4 space-y-4">
       <div
