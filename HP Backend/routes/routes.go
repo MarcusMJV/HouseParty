@@ -17,5 +17,9 @@ func RegisterRoutes(server *gin.Engine){
 	
 	server.POST("/signup", controllers.SignUp)
 	server.POST("/login", controllers.Login)
-	server.GET("/test", controllers.TestSpotify)
+
+	server.GET("/spotify/token/callback", controllers.SpotifyTokenCallBack)
+	server.GET("/auth/token", controllers.SpotifyAuthToken)
+	server.GET("/get/token", controllers.TestGetToken)
+
 }

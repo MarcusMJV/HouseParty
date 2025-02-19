@@ -12,6 +12,13 @@ const GetUserByIdQuery = `SELECT id, username, email FROM users WHERE id = ?`
 
 const DeleteRoomQuery = `DELETE FROM rooms WHERE id = ?`
 
+const GetSpotifyToken = `SELECT access_token, token_type, scope, expires_in, refresh_token, time_issued FROM token`
+
+const SaveTokenQuery = `
+DELETE FROM token;
+INSERT INTO token(access_token, token_type, scope, expires_in, refresh_token, time_issued) 
+VALUES(?, ?, ?, ?, ?, ?)`
+
 const PublicRoomsQuery = `
 SELECT 
     rooms.id, 

@@ -1,10 +1,12 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
+	"houseparty.com/config"
 	"houseparty.com/models"
 	"houseparty.com/services"
 )
@@ -45,19 +47,39 @@ func Login(context *gin.Context){
 	context.JSON(http.StatusOK, gin.H{"message": "User has been logged in", "user": user.ToUserResponse(), "token": token})
 }
 
-func TestSpotify(context *gin.Context){
-	// apiResponse, err := config.GetSpotifyToken();
-	tracks, err := services.SearchSongs("presure paramore")
+func SpotifyAuthToken(context *gin.Context){
+	authUrl, err := config.GenerateSpotifyAuthRequest()
 	if err != nil {
-		context.JSON(http.StatusUnauthorized,  gin.H{"message": "error accured", "error": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	log.Println(authUrl)
+	context.Redirect(http.StatusFound, authUrl)
+}
+
+func SpotifyTokenCallBack(context *gin.Context){
+	code :=  context.Query("code")
+	if code == "" {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Code query parameter is missing"})
 		return
 	}
 
-	songs, err := services.SimplifyTracks(tracks)
+	token, err := config.SetSpotifyToken(code)
 	if err != nil {
-		context.JSON(http.StatusUnauthorized,  gin.H{"message": "error accured", "error": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"message": "Spotify Token", "songs": songs})
+	context.JSON(http.StatusOK, gin.H{"message": "Token has been stored in DB", "token": token})
+}
+
+func TestGetToken(context *gin.Context){
+	token, err := config.GetSpotifyTokenObject()
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{"message": "Got Token From db", "token": token})
 }

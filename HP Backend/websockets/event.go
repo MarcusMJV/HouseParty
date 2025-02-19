@@ -28,6 +28,7 @@ type JoinedRoomEvent struct {
 	UserCount int `json:"user_count"`
 	PlayList []models.Song `json:"playlist"`
 	CurrentSong *models.Song `json:"current_song"`
+	ApiToken string `json:"api_token"`
 }
 
 type SearchSongsEvent struct {
@@ -56,10 +57,17 @@ func JoinRoom(event Event, c *Client) error {
 		client.Egress <- event
 	}
 
+	apiToken, err := config.GetSpotifyTokenObject()
+	if err != nil {
+		return err
+	}
+
+
 	joinedEvent := JoinedRoomEvent{
 		UserCount: len(c.Manager.Rooms[c.RoomID].Clients),
 		PlayList: c.Manager.Rooms[c.RoomID].PlayList,
 		CurrentSong: &c.Manager.Rooms[c.RoomID].CurrentSong,
+		ApiToken: apiToken.AccessToken,
 	}
 
 	joinedPayload, err := json.Marshal(joinedEvent)
@@ -123,7 +131,7 @@ func AddSong(event Event, c *Client) error {
 
 	c.Manager.AddSongToPlaylist(song, c.RoomID)
 
-	apiToken, err := config.GetSpotifyToken()
+	apiToken, err := config.GetSpotifyTokenObject()
 	if err != nil {
 		return err
 	}

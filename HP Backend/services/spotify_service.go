@@ -16,7 +16,7 @@ import (
 type Tracks map[string]interface{}
 
 func GetSongById(id string) (*models.Song, error) {
-	token, err := config.GetSpotifyToken()
+	token, err := config.GetSpotifyTokenObject()
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func GetSongById(id string) (*models.Song, error) {
 }
 
 func SearchSongs(search string) (*Tracks, error) {
-	token, err := config.GetSpotifyToken()
+	token, err := config.GetSpotifyTokenObject()
 	if err != nil {
 		return nil, err
 	}

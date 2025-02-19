@@ -4,34 +4,64 @@ import { onMounted, ref, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import HousePartyLogo from '@/components/HousePartyLogo.vue'
-import type { Song } from '@/types/song'
-import SongPlayer from '@/components/SongPlayer.vue';
+import type { Song } from '@/types/spotify'
 
-const route = useRoute();
-const socket = ref<WebSocket | null>(null);
-const roomId = route.params.id as string;
-const user = useUserStore();
-const messages = ref<string[]>([]);
-const usersCount = ref(1);
-const currentSong = ref<Song>();
-const queuedSongs = ref<Song[]>([]);
-const showSearchPanel = ref(false);
-const searchQuery = ref('');
+const route = useRoute()
+const socket = ref<WebSocket | null>(null)
+const roomId = route.params.id as string
+const user = useUserStore()
+const messages = ref<string[]>([])
+const usersCount = ref(1)
+const currentSong = ref<Song>()
+const queuedSongs = ref<Song[]>([])
+const showSearchPanel = ref(false)
+const searchQuery = ref('')
 const searchResults = ref<Song[]>([])
-const containerRef = ref<HTMLElement | null>(null);
-const shouldScroll = ref(false);
-const apiToken = ref<string>();
+const containerRef = ref<HTMLElement | null>(null)
+const shouldScroll = ref(false)
+let apiToken: string
+const player = ref<any>()
+const deviceId = ref<string | null>(null)
 
-watch(queuedSongs, () => {
-  nextTick(checkHeight);
-}, { deep: true });
+declare global {
+  interface Window {
+    onSpotifyWebPlaybackSDKReady: () => void;
+    Spotify: any;
+  }
+}
+
+function loadSpotifySDK(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (window.Spotify) {
+      resolve()
+      return
+    }
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      resolve()
+    }
+    const script = document.createElement('script')
+    script.src = 'https://sdk.scdn.co/spotify-player.js'
+    script.async = true
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+}
+
+watch(
+  queuedSongs,
+  () => {
+    nextTick(checkHeight)
+  },
+  { deep: true },
+)
 
 const checkHeight = (): void => {
   if (containerRef.value) {
-    const containerHeight = containerRef.value.scrollHeight;
-    shouldScroll.value = containerHeight > window.innerHeight * 0.42;
+    const containerHeight = containerRef.value.scrollHeight
+    shouldScroll.value = containerHeight > window.innerHeight * 0.42
   }
-};
+}
 
 const toggleSearchPanel = () => {
   showSearchPanel.value = !showSearchPanel.value
@@ -39,8 +69,8 @@ const toggleSearchPanel = () => {
 
 onMounted(() => {
   joinRoom(roomId)
-  checkHeight();
-  window.addEventListener('resize', checkHeight);
+  checkHeight()
+  window.addEventListener('resize', checkHeight)
 })
 
 const joinRoom = (roomId: string) => {
@@ -111,7 +141,11 @@ const addSong = (songId: string) => {
   toggleSearchPanel()
 }
 
-const handleSocketMessage = (message) => {
+// const updateSpotifyToken = (token: string) => {
+
+// }
+
+const handleSocketMessage = (message: any) => {
   switch (message.type) {
     case 'search-songs':
       searchResults.value = message.payload.songs
@@ -124,11 +158,15 @@ const handleSocketMessage = (message) => {
         queuedSongs.value.push(message.payload.song)
       }
 
-      apiToken.value = message.payload.api_token
+      if (apiToken != message.payload.api_token) {
+      }
+
       break
 
     case 'room-information':
-      console.log(message.payload)
+
+      apiToken = message.payload.api_token
+      initSpotifyPlayer()
 
       if (message.payload.current_song.id != '') {
         currentSong.value = message.payload.current_song
@@ -137,6 +175,8 @@ const handleSocketMessage = (message) => {
         queuedSongs.value = message.payload.playlist
       }
       usersCount.value = message.payload.user_count
+
+
       break
 
     case 'joined-room':
@@ -165,8 +205,77 @@ onBeforeUnmount(() => {
     socket.value.close(1000, 'Component unmounted')
     socket.value = null
   }
-  window.removeEventListener('resize', checkHeight);
+  window.removeEventListener('resize', checkHeight)
 })
+
+async function initSpotifyPlayer() {
+  await loadSpotifySDK();
+
+  // Make sure your token is valid and coming from your props/state.
+  const token: string = apiToken;
+
+  const newPlayer = new window.Spotify.Player({
+    name: 'House Party Player',
+    getOAuthToken: (cb: (token: string) => void) => {
+      // Pass the valid user access token here.
+      cb(token);
+    },
+    volume: 0.5,
+  });
+
+  newPlayer.addListener('ready', ({ device_id }: any) => {
+    console.log('Spotify Player Ready with Device ID:', device_id);
+    deviceId.value = device_id;
+  });
+
+  newPlayer.addListener('initialization_error', ({ message }: any) =>
+    console.error('Initialization Error:', message)
+  );
+  newPlayer.addListener('authentication_error', ({ message }: any) =>
+    console.error('Authentication Error:', message)
+  );
+  newPlayer.addListener('account_error', ({ message }: any) =>
+    console.error('Account Error:', message)
+  );
+  newPlayer.addListener('playback_error', ({ message }: any) =>
+    console.error('Playback Error:', message)
+  );
+
+  // Connect the player and log if connection fails.
+  const connected = await newPlayer.connect();
+  if (!connected) {
+    console.error("Failed to connect the Spotify player");
+  }
+
+  player.value = newPlayer;
+  console.log("Player has been initialized");
+}
+
+onMounted(() => {
+  initSpotifyPlayer()
+})
+
+// async function playSong() {
+//   if (deviceId.value && currentSong.value?.uri) {
+//     try {
+//       await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId.value}`, {
+//         method: 'PUT',
+//         body: JSON.stringify({ uris: [currentSong.value.uri] }),
+//         headers: {
+//           'Content-Type': 'application/json',
+//           Authorization: `Bearer ${apiToken}`,
+//         },
+//       })
+//       console.log('Playback started for song:', currentSong.value.uri)
+//     } catch (error) {
+//       console.error('Error starting playback:', error)
+//     }
+//   } else {
+//     console.warn('Device ID or song URI is not available yet.')
+//     console.log('uri: ' + currentSong.value?.uri)
+//     console.log('Device id: ' + deviceId.value)
+//   }
+// }
 </script>
 
 <template>
@@ -184,8 +293,6 @@ onBeforeUnmount(() => {
         <span class="px-2 text-white bg-slate-950 text-sm"> Currently Playing </span>
       </div>
     </div>
-
-    <SongPlayer v-if="currentSong && apiToken" :song="currentSong" :apiToken="apiToken"/>
 
     <div class="flex flex-col items-center mt-4 space-y-4">
       <div

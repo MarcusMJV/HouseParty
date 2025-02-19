@@ -1,15 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import type { PropType } from 'vue'
-import type { Song } from '@/types/song'
+import type { Song } from '@/types/spotify'
 
 // Extend the global Window interface for TypeScript.
-declare global {
-  interface Window {
-    onSpotifyWebPlaybackSDKReady: () => void
-    Spotify: any
-  }
-}
+
 
 // Define component props.
 const props = defineProps({
@@ -25,7 +20,8 @@ const props = defineProps({
 
 // Local reactive references.
 const currentSong = ref<Song>(props.song)
-const token: string = "BQADq-OU4QvIBP0gLx1hWtiMXm1FQ04tP3zQKJ2cDVcvNQPezg9VIWMugzNtyVJR84Gkh0vYPhUvXfA4Ztevaz3fLqcDoyO9PA8l4Z_Y9MX89aKhiu5X8m0GSRylHNy7oMsgqo2qpY9xyQvpMXGYVcddzZi1R6co3ZUgzCL68szk9N2Xd632JemK3jTUzaObjYraa47sBbD3jgHzVfhsEODlLY5kRr64bRIqLSBzdkJ6zaAb253CBZKIgQON"
+const token: string =
+  'BQADq-OU4QvIBP0gLx1hWtiMXm1FQ04tP3zQKJ2cDVcvNQPezg9VIWMugzNtyVJR84Gkh0vYPhUvXfA4Ztevaz3fLqcDoyO9PA8l4Z_Y9MX89aKhiu5X8m0GSRylHNy7oMsgqo2qpY9xyQvpMXGYVcddzZi1R6co3ZUgzCL68szk9N2Xd632JemK3jTUzaObjYraa47sBbD3jgHzVfhsEODlLY5kRr64bRIqLSBzdkJ6zaAb253CBZKIgQON'
 const player = ref<any>(null)
 const deviceId = ref<string | null>(null)
 
@@ -60,7 +56,7 @@ function loadSpotifySDK(): Promise<void> {
 async function initSpotifyPlayer() {
   await loadSpotifySDK()
 
-  console.log("Token:" + token)
+  console.log('Token:' + token)
 
   const newPlayer = new window.Spotify.Player({
     name: 'House Party Player',
@@ -90,7 +86,7 @@ async function initSpotifyPlayer() {
   newPlayer.addListener('playback_error', ({ message }: any) =>
     console.error('Playback Error:', message),
   )
-  
+
   await newPlayer.connect()
   player.value = newPlayer
 }
@@ -102,24 +98,24 @@ onMounted(() => {
 
 async function playSong() {
   if (deviceId.value && currentSong.value?.uri) {
-      try {
-        await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId.value}`, {
-          method: 'PUT',
-          body: JSON.stringify({ uris: [currentSong.value.uri] }),
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        console.log('Playback started for song:', currentSong.value.uri)
-      } catch (error) {
-        console.error('Error starting playback:', error)
-      }
-    } else {
-      console.warn('Device ID or song URI is not available yet.')
-      console.log("uri: "+currentSong.value.uri)
-      console.log("Device id: "+deviceId.value)
+    try {
+      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId.value}`, {
+        method: 'PUT',
+        body: JSON.stringify({ uris: [currentSong.value.uri] }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      console.log('Playback started for song:', currentSong.value.uri)
+    } catch (error) {
+      console.error('Error starting playback:', error)
     }
+  } else {
+    console.warn('Device ID or song URI is not available yet.')
+    console.log('uri: ' + currentSong.value.uri)
+    console.log('Device id: ' + deviceId.value)
+  }
 }
 
 /**
@@ -136,7 +132,5 @@ async function playSong() {
 </script>
 
 <template>
-  <div>
-
-  </div>
+  <div></div>
 </template>

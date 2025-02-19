@@ -52,4 +52,21 @@ func createTables() {
 	if err != nil {
 		panic(err)
 	}
+
+	createSpotifyTokenTable := `
+	CREATE TABLE IF NOT EXISTS token (
+    	id INTEGER PRIMARY KEY AUTOINCREMENT,
+    	access_token TEXT NOT NULL,
+		token_type TEXT NOT NULL,
+    	expires_in INTEGER NOT NULL,
+		refresh_token TEXT NOT NULL,
+		scope TEXT NOT NULL,
+		time_issued INTEGER NOT NULL
+	)
+	`
+	_, err = DB.Exec(createSpotifyTokenTable)
+
+	if err != nil {
+		panic(err)
+	}
 }
