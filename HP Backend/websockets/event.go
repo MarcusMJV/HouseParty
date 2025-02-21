@@ -9,26 +9,34 @@ import (
 	"houseparty.com/services"
 )
 
-//Define Event Types
-const(
-	EventJoinRoom = "joined-room"
-	EventSearchSongs = "search-songs"
-	EventAddSong = "add-song"
+// Define Event Types
+const (
+	EventJoinRoom     = "joined-room"
+	EventSearchSongs  = "search-songs"
+	EventAddSong      = "add-song"
+	EventPlaySong     = "play-song"
+	AddedSongPlaylist = "added-song-playlist"
+	SetAndPlaySong    = "set-and-play-song"
 )
 
-//Define Event Struct and Event Handler
+// Define Event Struct and Event Handler
 type Event struct {
-	Type    string `json:"type"`
+	Type    string          `json:"type"`
 	Payload json.RawMessage `json:"payload"`
 }
 type EventHandler func(event Event, c *Client) error
 
-//Define Event Payloads
+// Define Event Payloads
 type JoinedRoomEvent struct {
-	UserCount int `json:"user_count"`
-	PlayList []models.Song `json:"playlist"`
-	CurrentSong *models.Song `json:"current_song"`
-	ApiToken string `json:"api_token"`
+	UserCount   int           `json:"user_count"`
+	PlayList    []models.Song `json:"playlist"`
+	CurrentSong *models.Song  `json:"current_song"`
+	ApiToken    string        `json:"api_token"`
+}
+type SongChangeEvent struct {
+	PlayList    []models.Song `json:"playlist"`
+	CurrentSong *models.Song  `json:"current_song"`
+	ApiToken    string        `json:"api_token"`
 }
 
 type SearchSongsEvent struct {
@@ -39,16 +47,26 @@ type SearchResultsEvent struct {
 }
 
 type AddSongEvent struct {
-	From string `json:"from"`
+	From   string `json:"from"`
 	SongId string `json:"song_id"`
 }
 type AddSongResultEvent struct {
-	From string `json:"from"`
-	Song *models.Song `json:"song"`
-	ApiToken string `json:"api_token"`
+	From     string       `json:"from"`
+	Song     *models.Song `json:"song"`
+	ApiToken string       `json:"api_token"`
 }
 
-//Define Event Handlers
+type AddedSongToPlaylist struct {
+	From string       `json:"from"`
+	Song *models.Song `json:"song"`
+}
+
+type SetAndPlayCurrentSong struct {
+	ApiToken string       `json:"api_token"`
+	Song     *models.Song `json:"song"`
+}
+
+// Define Event Handlers
 func JoinRoom(event Event, c *Client) error {
 	for client := range c.Manager.Rooms[c.RoomID].Clients {
 		if client == c {
@@ -62,12 +80,11 @@ func JoinRoom(event Event, c *Client) error {
 		return err
 	}
 
-
 	joinedEvent := JoinedRoomEvent{
-		UserCount: len(c.Manager.Rooms[c.RoomID].Clients),
-		PlayList: c.Manager.Rooms[c.RoomID].PlayList,
-		CurrentSong: &c.Manager.Rooms[c.RoomID].CurrentSong,
-		ApiToken: apiToken.AccessToken,
+		UserCount:   len(c.Manager.Rooms[c.RoomID].Clients),
+		PlayList:    c.Manager.Rooms[c.RoomID].PlayList,
+		CurrentSong: c.Manager.Rooms[c.RoomID].CurrentSong,
+		ApiToken:    apiToken.AccessToken,
 	}
 
 	joinedPayload, err := json.Marshal(joinedEvent)
@@ -76,7 +93,7 @@ func JoinRoom(event Event, c *Client) error {
 	}
 
 	event = Event{
-		Type: "room-information",
+		Type:    "room-information",
 		Payload: joinedPayload,
 	}
 	c.Egress <- event
@@ -107,7 +124,7 @@ func SearchSongs(event Event, c *Client) error {
 	}
 
 	response := Event{
-		Type: EventSearchSongs,
+		Type:    EventSearchSongs,
 		Payload: responsePayload,
 	}
 
@@ -117,6 +134,10 @@ func SearchSongs(event Event, c *Client) error {
 
 func AddSong(event Event, c *Client) error {
 	var addSongEvent AddSongEvent
+	var response Event
+
+	room := c.Manager.Rooms[c.RoomID]
+
 	err := json.Unmarshal(event.Payload, &addSongEvent)
 	if err != nil {
 		return err
@@ -127,26 +148,21 @@ func AddSong(event Event, c *Client) error {
 		return err
 	}
 
-	log.Println(song)
+	if room.CurrentSong == nil {
+		err := room.SetCurrentSong(song)
+		if err != nil {
+			return err
+		}
 
-	c.Manager.AddSongToPlaylist(song, c.RoomID)
-
-	apiToken, err := config.GetSpotifyTokenObject()
-	if err != nil {
-		return err
+	} else {
+		payload, err := room.AddSongToPlaylist(song, addSongEvent.From)
+		if err != nil {
+			return err
+		}
+		response.Type = AddedSongPlaylist
+		response.Payload = payload
+		room.SendEventToAllClients(response)
 	}
 
-	responsePayload, err := json.Marshal(AddSongResultEvent{From: addSongEvent.From, Song: song, ApiToken: apiToken.AccessToken})
-	if err != nil {
-		return err
-	}
-
-	event = Event{
-		Type: EventAddSong,
-		Payload: responsePayload,
-	}
-	for client := range c.Manager.Rooms[c.RoomID].Clients {
-		client.Egress <- event
-	}
 	return nil
 }

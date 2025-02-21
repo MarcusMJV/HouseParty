@@ -25,8 +25,8 @@ const deviceId = ref<string | null>(null)
 
 declare global {
   interface Window {
-    onSpotifyWebPlaybackSDKReady: () => void;
-    Spotify: any;
+    onSpotifyWebPlaybackSDKReady: () => void
+    Spotify: any
   }
 }
 
@@ -141,42 +141,35 @@ const addSong = (songId: string) => {
   toggleSearchPanel()
 }
 
-// const updateSpotifyToken = (token: string) => {
-
-// }
-
 const handleSocketMessage = (message: any) => {
+  console.log(message)
   switch (message.type) {
     case 'search-songs':
       searchResults.value = message.payload.songs
       break
 
-    case 'add-song':
-      if (!currentSong.value) {
-        currentSong.value = message.payload.song
-      } else {
-        queuedSongs.value.push(message.payload.song)
-      }
+    case 'set-and-play-song':
+      const incomingSong = message.payload.song as Song
+      queuedSongs.value = queuedSongs.value.filter((song) => song.id !== incomingSong.id)
+      currentSong.value = incomingSong
+      playSong();
+      break
 
-      if (apiToken != message.payload.api_token) {
-      }
-
+    case 'added-song-playlist':
+      queuedSongs.value.push(message.payload.song)
       break
 
     case 'room-information':
-
       apiToken = message.payload.api_token
       initSpotifyPlayer()
 
-      if (message.payload.current_song.id != '') {
+      if (message.payload.current_song?.uri != '') {
         currentSong.value = message.payload.current_song
       }
       if (message.payload.playlist?.length > 0) {
         queuedSongs.value = message.payload.playlist
       }
       usersCount.value = message.payload.user_count
-
-
       break
 
     case 'joined-room':
@@ -209,73 +202,63 @@ onBeforeUnmount(() => {
 })
 
 async function initSpotifyPlayer() {
-  await loadSpotifySDK();
-
-  // Make sure your token is valid and coming from your props/state.
-  const token: string = apiToken;
+  await loadSpotifySDK()
+  const token: string = apiToken
 
   const newPlayer = new window.Spotify.Player({
     name: 'House Party Player',
     getOAuthToken: (cb: (token: string) => void) => {
-      // Pass the valid user access token here.
-      cb(token);
+      cb(token)
     },
     volume: 0.5,
-  });
+  })
 
   newPlayer.addListener('ready', ({ device_id }: any) => {
-    console.log('Spotify Player Ready with Device ID:', device_id);
-    deviceId.value = device_id;
-  });
+    deviceId.value = device_id
+  })
 
   newPlayer.addListener('initialization_error', ({ message }: any) =>
-    console.error('Initialization Error:', message)
-  );
+    console.error('Initialization Error:', message),
+  )
   newPlayer.addListener('authentication_error', ({ message }: any) =>
-    console.error('Authentication Error:', message)
-  );
+    console.error('Authentication Error:', message),
+  )
   newPlayer.addListener('account_error', ({ message }: any) =>
-    console.error('Account Error:', message)
-  );
+    console.error('Account Error:', message),
+  )
   newPlayer.addListener('playback_error', ({ message }: any) =>
-    console.error('Playback Error:', message)
-  );
+    console.error('Playback Error:', message),
+  )
 
-  // Connect the player and log if connection fails.
-  const connected = await newPlayer.connect();
+  const connected = await newPlayer.connect()
   if (!connected) {
-    console.error("Failed to connect the Spotify player");
+    console.error('Failed to connect the Spotify player')
   }
 
-  player.value = newPlayer;
-  console.log("Player has been initialized");
+  player.value = newPlayer
+  console.log('Player has been initialized')
 }
 
 onMounted(() => {
   initSpotifyPlayer()
 })
 
-// async function playSong() {
-//   if (deviceId.value && currentSong.value?.uri) {
-//     try {
-//       await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId.value}`, {
-//         method: 'PUT',
-//         body: JSON.stringify({ uris: [currentSong.value.uri] }),
-//         headers: {
-//           'Content-Type': 'application/json',
-//           Authorization: `Bearer ${apiToken}`,
-//         },
-//       })
-//       console.log('Playback started for song:', currentSong.value.uri)
-//     } catch (error) {
-//       console.error('Error starting playback:', error)
-//     }
-//   } else {
-//     console.warn('Device ID or song URI is not available yet.')
-//     console.log('uri: ' + currentSong.value?.uri)
-//     console.log('Device id: ' + deviceId.value)
-//   }
-// }
+async function playSong() {
+  if (deviceId.value && currentSong.value?.uri) {
+    await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId.value}`, {
+      method: 'PUT',
+      body: JSON.stringify({ uris: [currentSong.value?.uri] }),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiToken}`,
+      },
+    })
+  } else {
+    console.warn('Device ID or song URI is not available yet.')
+    console.log('uri: ' + currentSong.value?.uri)
+    console.log('Device id: ' + deviceId.value)
+  }
+}
 </script>
 
 <template>

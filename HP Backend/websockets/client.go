@@ -10,7 +10,6 @@ import (
 )
 
 type ClientList map[*Client]bool
-type RoomDataList map[string]*RoomData
 type PlayList []models.Song
 
 type Client struct {
@@ -18,13 +17,6 @@ type Client struct {
 	RoomID string
 	Manager *Manager
 	Egress chan Event
-}
-
-type RoomData struct {
-	*models.Room
-	Clients ClientList
-	PlayList PlayList
-	CurrentSong models.Song
 }
 
 var (
@@ -38,16 +30,6 @@ func NewClient(connection *websocket.Conn, manager *Manager, RoomID string) *Cli
 		RoomID: RoomID,
 		Manager: manager,
 		Egress: make(chan Event),
-	}
-}
-
-func NewRoomData(room *models.Room) *RoomData {
-	var roomPlaylist []models.Song
-	return &RoomData{
-		Room: room,
-		Clients: make(ClientList),
-		PlayList: roomPlaylist,
-		CurrentSong: models.Song{},
 	}
 }
 

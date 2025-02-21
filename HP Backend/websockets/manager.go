@@ -112,17 +112,3 @@ func checkOrigin(r *http.Request) bool {
 		return false
 	}
 }
-
-func (m *Manager) AddSongToPlaylist(song *models.Song, roomId string) {
-	m.Lock()
-	defer m.Unlock()
-
-	roomPlaylist := m.Rooms[roomId].PlayList
-	currentSong := m.Rooms[roomId].CurrentSong
-
-	if len(roomPlaylist) == 0 && currentSong.Id == ""{
-		m.Rooms[roomId].CurrentSong = *song
-	}else{
-		m.Rooms[roomId].PlayList = append(roomPlaylist, *song)
-	}
-}

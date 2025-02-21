@@ -36,7 +36,7 @@ func (s *SpotifyTokenObject) SaveToken() error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(s.AccessToken, s.TokenType, s.ExpiresIn, s.RefereshToken, s.Scope, s.TimeIssued)
+	_, err = stmt.Exec(s.AccessToken, s.TokenType, s.Scope, s.ExpiresIn, s.RefereshToken, s.TimeIssued)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (s *SpotifyTokenObject) SaveToken() error {
 func GetTokenFromDB() (*SpotifyTokenObject, error) {
 	var token SpotifyTokenObject
 	row := storage.DB.QueryRow(storage.GetSpotifyToken)
-	err := row.Scan(&token.AccessToken, &token.TokenType, &token.ExpiresIn, &token.RefereshToken, &token.Scope, &token.TimeIssued)
+	err := row.Scan(&token.AccessToken, &token.TokenType, &token.Scope, &token.ExpiresIn, &token.RefereshToken, &token.TimeIssued)
 
 	if err == sql.ErrNoRows {
 		return nil, errors.New("user not found")
@@ -70,7 +70,9 @@ func GetSpotifyTokenObject() (*SpotifyTokenObject, error) {
 		SpotifyToken = token
 	}
 
+
 	if(checkIfTokenExpired()){
+		log.Println("Refresh Here: "+ SpotifyToken.RefereshToken)
 		token, err := RefereshToken(SpotifyToken.RefereshToken)
 		if err != nil {
 			return nil, err
@@ -174,6 +176,7 @@ func RefereshToken(refreshToken string) (*SpotifyTokenObject, error) {
 	data := url.Values{}
 	data.Add("refresh_token", refreshToken)
 	data.Add("grant_type", "refresh_token")
+	  
 
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(data.Encode()))
