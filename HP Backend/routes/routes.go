@@ -14,12 +14,11 @@ func RegisterRoutes(server *gin.Engine){
 	authenticated.GET("/rooms",controllers.RetieveRooms )
 	authenticated.GET("/join/room/:id",controllers.JoinRoom )
 	authenticated.DELETE("/room/delete/:id", controllers.DeleteRoom)
+	authenticated.GET("/auth/token", controllers.SpotifyAuthToken)
+	authenticated.POST("/spotify/token/callback/:code", controllers.SpotifyTokenCallBack)
 	
 	server.POST("/signup", controllers.SignUp)
 	server.POST("/login", controllers.Login)
-
-	server.GET("/spotify/token/callback", controllers.SpotifyTokenCallBack)
-	server.GET("/auth/token", controllers.SpotifyAuthToken)
 	server.GET("/get/token", controllers.TestGetToken)
 
 }

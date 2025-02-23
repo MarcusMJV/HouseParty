@@ -54,3 +54,4 @@ func checkInUse(username, email string) (bool, string) {
 
 	return false, ""
 }
+

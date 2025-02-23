@@ -4,6 +4,7 @@ import AuthView from '@/views/AuthView.vue'
 import { useUserStore } from '@/stores/user';
 import CreateRoomView from '@/views/CreateRoomView.vue'
 import RoomView from '@/views/RoomView.vue';
+import SpotifyCallback from '@/views/SpotifyCallback.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,6 +31,12 @@ const router = createRouter({
       path: '/signup-or-login',
       name: 'signup-or-login',
       component: AuthView,
+    },
+
+    {
+      path: '/spotify/callback',
+      name: 'spotify-call',
+      component: SpotifyCallback,
     },
 
   ],

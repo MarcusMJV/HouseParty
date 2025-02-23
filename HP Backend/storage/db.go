@@ -27,7 +27,8 @@ func createTables() {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT NOT NULL UNIQUE,
 		email TEXT NOT NULL UNIQUE,
-		password TEXT NOT NULL
+		password TEXT NOT NULL,
+		spotify_connected BOOLEAN NOT NULL DEFAULT false
 	)
 	`
 	_, err := DB.Exec(createUsersTable)
@@ -61,7 +62,9 @@ func createTables() {
     	expires_in INTEGER NOT NULL,
 		refresh_token TEXT NOT NULL,
 		scope TEXT NOT NULL,
-		time_issued INTEGER NOT NULL
+		time_issued INTEGER NOT NULL,
+		user_id INTEGER NOT NULL,
+		FOREIGN KEY (user_id) REFERENCES users(user_id)
 	)
 	`
 	_, err = DB.Exec(createSpotifyTokenTable)

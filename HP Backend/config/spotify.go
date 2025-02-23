@@ -19,24 +19,38 @@ import (
 )
 
 type SpotifyTokenObject struct {
-	AccessToken   string `json:"access_token"`
-	TokenType     string `json:"token_type"`
-	ExpiresIn     int    `json:"expires_in"`
-	RefereshToken string `json:"refresh_token"`
-	Scope         string `json:"scope"`
-	TimeIssued    int    `json:"time_issued"`
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+	Scope        string `json:"scope"`
+	TimeIssued   int    `json:"time_issued"`
+	UserID       int64  `json:"user_id"`
 }
 
-var SpotifyToken *SpotifyTokenObject
+const redirectUrl = "http://localhost:5173/spotify/callback"
 
 func (s *SpotifyTokenObject) SaveToken() error {
-	stmt, err := storage.DB.Prepare(storage.SaveTokenQuery);
+
+	deleteStmt, err := storage.DB.Prepare(storage.DeleteTokenQuery)
+	if err != nil {
+		return err
+	}
+	defer deleteStmt.Close()
+
+	_, err = deleteStmt.Exec(s.UserID)
+	if err != nil {
+		return err
+	}
+
+	stmt, err := storage.DB.Prepare(storage.SaveTokenQuery)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(s.AccessToken, s.TokenType, s.Scope, s.ExpiresIn, s.RefereshToken, s.TimeIssued)
+	_, err = stmt.Exec(s.AccessToken, s.TokenType, s.Scope, s.ExpiresIn, s.RefreshToken, s.TimeIssued, s.UserID)
+
 	if err != nil {
 		return err
 	}
@@ -45,11 +59,18 @@ func (s *SpotifyTokenObject) SaveToken() error {
 
 func GetTokenFromDB() (*SpotifyTokenObject, error) {
 	var token SpotifyTokenObject
-	row := storage.DB.QueryRow(storage.GetSpotifyToken)
-	err := row.Scan(&token.AccessToken, &token.TokenType, &token.Scope, &token.ExpiresIn, &token.RefereshToken, &token.TimeIssued)
+	row := storage.DB.QueryRow(storage.GetSpotifyToken, )
+	err := row.Scan(
+		&token.AccessToken,
+		&token.TokenType,
+		&token.Scope,
+		&token.ExpiresIn,
+		&token.RefreshToken,
+		&token.TimeIssued,
+		&token.UserID)
 
 	if err == sql.ErrNoRows {
-		return nil, errors.New("user not found")
+		return nil, errors.New("token not found")
 	} else if err != nil {
 		return nil, err
 	}
@@ -57,34 +78,29 @@ func GetTokenFromDB() (*SpotifyTokenObject, error) {
 	return &token, nil
 }
 
-func checkIfTokenExpired() bool {
-	return SpotifyToken.TimeIssued+SpotifyToken.ExpiresIn < int((int64)(time.Now().Unix()))
+func checkIfTokenExpired(token *SpotifyTokenObject) bool {
+	return token.TimeIssued+token.ExpiresIn < int((int64)(time.Now().Unix()))
 }
 
 func GetSpotifyTokenObject() (*SpotifyTokenObject, error) {
-	if SpotifyToken == nil {
-		token, err := GetTokenFromDB()
+	token, err := GetTokenFromDB()
+	if err != nil {
+		return nil, err
+	}
+
+	if checkIfTokenExpired(token) {
+		tokenRefresh, err := RefreshToken(token.RefreshToken, token.UserID)
 		if err != nil {
 			return nil, err
 		}
-		SpotifyToken = token
+		token = tokenRefresh
 	}
 
+	return token, nil
 
-	if(checkIfTokenExpired()){
-		log.Println("Refresh Here: "+ SpotifyToken.RefereshToken)
-		token, err := RefereshToken(SpotifyToken.RefereshToken)
-		if err != nil {
-			return nil, err
-		}
-		SpotifyToken = token
-	}
-
-	return SpotifyToken, nil
-	
 }
 
-func SetSpotifyToken(code string) (*SpotifyTokenObject, error) {
+func SetSpotifyToken(code string, userId int64) (*SpotifyTokenObject, error) {
 
 	log.Println("Code Here: " + code)
 
@@ -96,7 +112,7 @@ func SetSpotifyToken(code string) (*SpotifyTokenObject, error) {
 
 	data := url.Values{}
 	data.Set("code", code)
-	data.Add("redirect_uri", "http://192.168.3.3:8080/spotify/token/callback")
+	data.Add("redirect_uri", redirectUrl)
 	data.Add("grant_type", "authorization_code")
 
 	client := &http.Client{}
@@ -126,18 +142,20 @@ func SetSpotifyToken(code string) (*SpotifyTokenObject, error) {
 		return nil, err
 	}
 	tokenObject.TimeIssued = int((int64)(time.Now().Unix()))
+	tokenObject.UserID = userId
 
 	err = tokenObject.SaveToken()
 	if err != nil {
 		return nil, err
 	}
-	SpotifyToken = &tokenObject
+
 	
+
 	return &tokenObject, nil
 }
 
 func GenerateSpotifyAuthRequest() (string, error) {
-	redirectURL := "http://192.168.3.3:8080/spotify/token/callback"
+
 	scope := "streaming user-read-email user-read-private"
 	state := generateRandomString(16)
 	clientID := os.Getenv("SPOTIFY_CLIENT_ID")
@@ -150,7 +168,7 @@ func GenerateSpotifyAuthRequest() (string, error) {
 	data.Add("response_type", "code")
 	data.Add("client_id", clientID)
 	data.Add("scope", scope)
-	data.Add("redirect_uri", redirectURL)
+	data.Add("redirect_uri", redirectUrl)
 	data.Add("state", state)
 
 	authUrl := "https://accounts.spotify.com/authorize/?" + data.Encode()
@@ -166,7 +184,7 @@ func generateRandomString(n int) string {
 	return hex.EncodeToString(b)[:n]
 }
 
-func RefereshToken(refreshToken string) (*SpotifyTokenObject, error) {
+func RefreshToken(refreshToken string, userId int64) (*SpotifyTokenObject, error) {
 	clientID := os.Getenv("SPOTIFY_CLIENT_ID")
 	clientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
 	if clientID == "" || clientSecret == "" {
@@ -176,7 +194,6 @@ func RefereshToken(refreshToken string) (*SpotifyTokenObject, error) {
 	data := url.Values{}
 	data.Add("refresh_token", refreshToken)
 	data.Add("grant_type", "refresh_token")
-	  
 
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(data.Encode()))
@@ -205,6 +222,7 @@ func RefereshToken(refreshToken string) (*SpotifyTokenObject, error) {
 		return nil, err
 	}
 	tokenObject.TimeIssued = int((int64)(time.Now().Unix()))
+	tokenObject.UserID = userId
 
 	err = tokenObject.SaveToken()
 	if err != nil {
@@ -212,4 +230,3 @@ func RefereshToken(refreshToken string) (*SpotifyTokenObject, error) {
 	}
 	return &tokenObject, nil
 }
-

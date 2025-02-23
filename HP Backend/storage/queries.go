@@ -8,16 +8,19 @@ const SaveRoomQuery = `INSERT INTO rooms(id, name, description, host_id, public,
 
 const GetRoomByIdQuery = `SELECT id, name, description, host_id, public, created_at FROM rooms WHERE id = ?`
 
-const GetUserByIdQuery = `SELECT id, username, email FROM users WHERE id = ?`
+const GetUserByIdQuery = `SELECT id, username, email, spotify_connected FROM users WHERE id = ?`
 
 const DeleteRoomQuery = `DELETE FROM rooms WHERE id = ?`
 
-const GetSpotifyToken = `SELECT access_token, token_type, scope, expires_in, refresh_token, time_issued FROM token`
+const GetSpotifyToken = `SELECT access_token, token_type, scope, expires_in, referesh_token, time_issued, user_id FROM token WHERE user_id = ?`
+
+const DeleteTokenQuery = "DELETE FROM token WHERE user_id = ?"
+
+const ActivateSpotifyQuery = "UPDATE users SET spotify_connected = ? WHERE id = ?"
 
 const SaveTokenQuery = `
-DELETE FROM token;
-INSERT INTO token(access_token, token_type, scope, expires_in, refresh_token, time_issued) 
-VALUES(?, ?, ?, ?, ?, ?)`
+INSERT INTO token(access_token, token_type, scope, expires_in, refresh_token, time_issued, user_id) 
+VALUES(?, ?, ?, ?, ?, ?, ?)`
 
 const PublicRoomsQuery = `
 SELECT 

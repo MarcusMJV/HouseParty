@@ -9,16 +9,18 @@ import (
 )
 
 type User struct {
-	Id       int64  `json:"id"`
-    Username string `json:"username"`
-    Email    string `json:"email"`
-    Password string `json:"password"`
+	Id               int64  `json:"id"`
+	Username         string `json:"username"`
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	SpotifyConnected bool   `json:"spotify_connected"`
 }
 
 type UserResponse struct {
-    Id       int64  `json:"id"`
-    Username string `json:"username"`
-    Email    string `json:"email"`
+	Id               int64  `json:"id"`
+	Username         string `json:"username"`
+	Email            string `json:"email"`
+	SpotifyConnected bool   `json:"spotify_connected"`
 }
 
 func (u *User) Save() error {
@@ -46,7 +48,7 @@ func (u *User) Save() error {
 func (u *User) GetUserById(id int64) error {
 	row := storage.DB.QueryRow(storage.GetUserByIdQuery, id)
 
-	err := row.Scan(&u.Id, &u.Username, &u.Email)
+	err := row.Scan(&u.Id, &u.Username, &u.Email, &u.SpotifyConnected)
 
 	if err == sql.ErrNoRows {
 		return errors.New("user not found")
@@ -63,7 +65,7 @@ func (u *User) RetrieveHashPassword() (string, error) {
 	var HashPassword string
 	err := row.Scan(&u.Id, &u.Username, &u.Email, &HashPassword)
 
-	if err == sql.ErrNoRows{
+	if err == sql.ErrNoRows {
 		return "", errors.New("there is no user with these credentials")
 	} else if err != nil {
 		return "", err
@@ -73,9 +75,23 @@ func (u *User) RetrieveHashPassword() (string, error) {
 }
 
 func (u *User) ToUserResponse() *UserResponse {
-    return &UserResponse{
-        Id:       u.Id,
-        Username: u.Username,
-        Email:    u.Email,
-    }
+	return &UserResponse{
+		Id:       u.Id,
+		Username: u.Username,
+		Email:    u.Email,
+		SpotifyConnected: u.SpotifyConnected,
+	}
+}
+
+func (u *User) ActivateSpotify() error {
+	row := storage.DB.QueryRow(storage.ActivateSpotifyQuery, true, u.Id)
+	err := row.Err()
+
+	if err == sql.ErrNoRows {
+		return errors.New("user not found")
+	} else if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -217,18 +217,18 @@ async function initSpotifyPlayer() {
     deviceId.value = device_id
   })
 
-  newPlayer.addListener('initialization_error', ({ message }: any) =>
-    console.error('Initialization Error:', message),
-  )
-  newPlayer.addListener('authentication_error', ({ message }: any) =>
-    console.error('Authentication Error:', message),
-  )
-  newPlayer.addListener('account_error', ({ message }: any) =>
-    console.error('Account Error:', message),
-  )
-  newPlayer.addListener('playback_error', ({ message }: any) =>
-    console.error('Playback Error:', message),
-  )
+  // newPlayer.addListener('initialization_error', ({ message }: any) =>
+  //   console.error('Initialization Error:', message),
+  // )
+  // newPlayer.addListener('authentication_error', ({ message }: any) =>
+  //   console.error('Authentication Error:', message),
+  // )
+  // newPlayer.addListener('account_error', ({ message }: any) =>
+  //   console.error('Account Error:', message),
+  // )
+  // newPlayer.addListener('playback_error', ({ message }: any) =>
+  //   console.error('Playback Error:', message),
+  // )
 
   const connected = await newPlayer.connect()
   if (!connected) {
@@ -419,7 +419,7 @@ async function playSong() {
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-          </button>
+          </button> 
         </div>
 
         <div class="mt-4 space-y-2 max-h-60 overflow-y-auto custom-scroll">

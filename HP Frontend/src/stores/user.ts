@@ -4,11 +4,12 @@ interface UserCredentials {
   id: number;
   username: string;
   email: string;
+  spotify_connected: boolean;
 }
 
 interface UserState {
   jwt: string | null;
-  credentials: UserCredentials | null;
+  credentials: UserCredentials ;
 }
 
 export const useUserStore = defineStore('user', {
@@ -26,13 +27,15 @@ export const useUserStore = defineStore('user', {
       this.jwt = jwt;
       localStorage.setItem('jwt', jwt);
     },
+    activateSpotifyConnection() {
+      this.credentials.spotify_connected = true
+    },
     setCredentials(credentials: UserCredentials) {
       this.credentials = credentials;
       localStorage.setItem('credentials', JSON.stringify(credentials));
     },
     clearUser() {
       this.jwt = null;
-      this.credentials = null;
       localStorage.removeItem('jwt');
       localStorage.removeItem('credentials');
     },

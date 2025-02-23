@@ -152,6 +152,21 @@ func SimplifyTracks(tracks *Tracks) ([]models.Song, error) {
 	return songs, nil
 }
 
+func ConnectSpotifyAccount(id int64) error {
+	var user models.User
+	err := user.GetUserById(id)
+	if err != nil{
+		return err
+	}
+	
+	err = user.ActivateSpotify()
+	if err != nil{
+		return err
+	}
+
+	return nil
+}
+
 func SimplifyTrack(track map[string]interface{}) (*models.Song, error) {
 	var artistsNames []string
 	if artists, ok := track["artists"].([]interface{}); ok {

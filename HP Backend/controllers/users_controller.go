@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -53,20 +52,31 @@ func SpotifyAuthToken(context *gin.Context){
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	log.Println(authUrl)
-	context.Redirect(http.StatusFound, authUrl)
+	context.JSON(http.StatusOK, gin.H{"message": "Url Generated", "auth_url": authUrl,})
 }
 
 func SpotifyTokenCallBack(context *gin.Context){
-	code :=  context.Query("code")
+	var user models.User
+	code := context.Param("code")
+	err := user.GetUserById(context.GetInt64("userId")) 
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not get user", "error": err.Error()})
+		return
+	}
+
 	if code == "" {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Code query parameter is missing"})
 		return
 	}
-
-	token, err := config.SetSpotifyToken(code)
+	token, err := config.SetSpotifyToken(code, user.Id)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Could get and save token", "error": err.Error()})
+		return
+	}
+
+	err = user.ActivateSpotify()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not update user", "error": err.Error()})
 		return
 	}
 
@@ -81,5 +91,5 @@ func TestGetToken(context *gin.Context){
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"message": "Got Token From db", "token": token})
+	context.JSON(http.StatusOK, gin.H{"message": "spotify connected", "token": token})
 }

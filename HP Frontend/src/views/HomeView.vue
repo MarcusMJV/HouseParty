@@ -28,6 +28,7 @@ const errorMessage = ref('');
 const successMessage = ref('');
 const userStore = useUserStore();
 const route = useRoute();
+const isSpotifyConnected = ref(userStore.credentials?.spotify_connected)
 
 username.value = userStore.credentials?.username || '';
 
@@ -100,6 +101,29 @@ const getRooms = async () => {
     errorMessage.value = error instanceof Error ? error.message : 'An unexpected error occurred';
   }
 }
+
+
+const requestSpotifyAuth = async () => {
+  try {
+    const response = await fetch('http://localhost:8080/auth/token', {
+      method: "GET",
+      headers: {
+        'Authorization': `Bearer ${userStore.jwt}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json()
+    window.location.href = data.auth_url
+
+  }catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : 'An unexpected error occurred';
+  }
+
+}
 </script>
 
 <template>
@@ -139,11 +163,14 @@ const getRooms = async () => {
         </div>
       </div>
 
-      <router-link to="/create/room" class="p-2 hover:cursor-pointer rounded-lg shadow-lg flex items-center justify-center bg-sky-500 hover:bg-sky-600 transition-colors group mt-4">
+      <router-link v-if="isSpotifyConnected" to="/create/room" class="p-2 hover:cursor-pointer rounded-lg shadow-lg flex items-center justify-center bg-sky-500 hover:bg-sky-600 transition-colors group mt-4">
        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-white group-hover:rotate-90 transition-transform">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
        </svg>
       </router-link>
+      <button v-else @click="requestSpotifyAuth" class="p-2 hover:cursor-pointer rounded-lg shadow-lg flex items-center justify-center bg-sky-500 hover:bg-sky-600 transition-colors group mt-4">
+            Connect Spotify Account
+      </button>
 
       <div class="relative w-120 mt-4">
         <div class="absolute inset-0 flex items-center">
