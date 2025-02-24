@@ -43,6 +43,7 @@ func Login(context *gin.Context){
 		return
 	}
 
+
 	context.JSON(http.StatusOK, gin.H{"message": "User has been logged in", "user": user.ToUserResponse(), "token": token})
 }
 
@@ -84,7 +85,7 @@ func SpotifyTokenCallBack(context *gin.Context){
 }
 
 func TestGetToken(context *gin.Context){
-	token, err := config.GetSpotifyTokenObject()
+	token, err := config.GetSpotifyTokenObject(1)
 
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

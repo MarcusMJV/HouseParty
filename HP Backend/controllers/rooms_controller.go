@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -29,20 +30,20 @@ func CreateNewRoom(context *gin.Context) {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not create room", "error": err.Error()})
 		return
 	}
-
-	websockets.NewRoomData(&room)
+	
 	context.JSON(http.StatusCreated, gin.H{"message": "room created", "room": room})
 }
 
 func RetieveRooms(context *gin.Context) {
 	
-	publicRooms, userRooms, err := services.GetRooms(context.GetInt64("userId"))
+	publicRooms, userRoom, err := services.GetRooms(context.GetInt64("userId"))
 	if err != nil {
+		log.Println(err.Error())
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not retrive rooms", "error": err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusCreated, gin.H{"message": "fetched rooms", "public_rooms": publicRooms, "user_rooms": userRooms})
+	context.JSON(http.StatusCreated, gin.H{"message": "fetched rooms", "public_rooms": publicRooms, "user_room": userRoom})
 }
 
 func DeleteRoom(context *gin.Context) {

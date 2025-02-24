@@ -198,6 +198,9 @@ onBeforeUnmount(() => {
     socket.value.close(1000, 'Component unmounted')
     socket.value = null
   }
+  if(player.value){
+    player.value.disconnect()
+  }
   window.removeEventListener('resize', checkHeight)
 })
 
@@ -419,7 +422,7 @@ async function playSong() {
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-          </button> 
+          </button>
         </div>
 
         <div class="mt-4 space-y-2 max-h-60 overflow-y-auto custom-scroll">

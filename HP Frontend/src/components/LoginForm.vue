@@ -66,6 +66,7 @@ const handleSubmit = async (e: Event) => {
 
     const userStore = useUserStore();
     userStore.setJwt(data.token);
+    console.log(data.user)
     userStore.setCredentials(data.user);
 
     router.push({ name: 'home' });

@@ -50,7 +50,7 @@ func (r *RoomData) AddSongToPlaylist(song *models.Song, name string) ([]byte, er
 
 func (r *RoomData) SetCurrentSong(song *models.Song) error {
 	r.CurrentSong = song
-	tokenObject , err:= config.GetSpotifyTokenObject()
+	tokenObject , err:= config.GetSpotifyTokenObject(r.HostID)
 
 	if err != nil {
 		return err

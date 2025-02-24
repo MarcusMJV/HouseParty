@@ -34,9 +34,9 @@ func DeleteRoomByID(roomId string) (*models.RoomResponse, error){
 	return room.ToRoomResponse(host.Username), nil
 }
 
-func GetRooms(userId int64) ([]*models.RoomResponse, []*models.RoomResponse, error) {
+func GetRooms(userId int64) ([]*models.RoomResponse, *models.RoomResponse, error) {
 	publicRoomsChan := make(chan []*models.RoomResponse, 1)
-	userRoomsChan := make(chan []*models.RoomResponse, 1)
+	userRoomsChan := make(chan *models.RoomResponse, 1)
 	errorChan := make(chan error, 2)
 
 	var wg sync.WaitGroup
@@ -44,7 +44,7 @@ func GetRooms(userId int64) ([]*models.RoomResponse, []*models.RoomResponse, err
 
 	go func() {
 		defer wg.Done()
-		rooms, err := FilterAndGetRooms(storage.PublicRoomsQuery, true, userId)
+		rooms, err := FilterAndGetRooms(userId)
 		if err != nil {
 			errorChan <- err
 			publicRoomsChan <- nil
@@ -55,7 +55,7 @@ func GetRooms(userId int64) ([]*models.RoomResponse, []*models.RoomResponse, err
 
 	go func() {
 		defer wg.Done()
-		rooms, err := FilterAndGetRooms(storage.UserRoomsQuery, userId)
+		rooms, err := GetUserRoom(userId)
 		if err != nil {
 			errorChan <- err
 			userRoomsChan <- nil
@@ -79,9 +79,31 @@ func GetRooms(userId int64) ([]*models.RoomResponse, []*models.RoomResponse, err
 	return publicRooms, userRooms, nil
 }
 
-func FilterAndGetRooms(query string, values ...interface{}) ([]*models.RoomResponse, error) {
+func  GetUserRoom(userId int64) (*models.RoomResponse, error) {
+	var room models.RoomResponse
+
+	stmt, err := storage.DB.Prepare(storage.UserRoomsQuery)
+	if err != nil {
+		return &room, err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(userId).Scan(&room.ID, 
+									&room.Name, 
+									&room.Description, 
+									&room.HostID, 
+									&room.Public, 
+									&room.CreatedAt,
+									&room.HostName)
+	if err != nil {
+		return &room, err
+	}
+	return &room, nil
+}
+
+func FilterAndGetRooms(userId int64) ([]*models.RoomResponse, error) {
 	var rooms []*models.RoomResponse
-	rows, err := storage.DB.Query(query, values...)
+	rows, err := storage.DB.Query(storage.PublicRoomsQuery, true, userId)
 	if err != nil {
 		return rooms, err
 	}

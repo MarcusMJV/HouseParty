@@ -57,17 +57,10 @@ func (s *SpotifyTokenObject) SaveToken() error {
 	return nil
 }
 
-func GetTokenFromDB() (*SpotifyTokenObject, error) {
+func GetTokenFromDB(hostId int64) (*SpotifyTokenObject, error) {
 	var token SpotifyTokenObject
-	row := storage.DB.QueryRow(storage.GetSpotifyToken, )
-	err := row.Scan(
-		&token.AccessToken,
-		&token.TokenType,
-		&token.Scope,
-		&token.ExpiresIn,
-		&token.RefreshToken,
-		&token.TimeIssued,
-		&token.UserID)
+	row := storage.DB.QueryRow(storage.GetSpotifyToken, hostId)
+	err := row.Scan( &token.AccessToken, &token.TokenType, &token.Scope, &token.ExpiresIn, &token.RefreshToken, &token.TimeIssued, &token.UserID)
 
 	if err == sql.ErrNoRows {
 		return nil, errors.New("token not found")
@@ -82,15 +75,17 @@ func checkIfTokenExpired(token *SpotifyTokenObject) bool {
 	return token.TimeIssued+token.ExpiresIn < int((int64)(time.Now().Unix()))
 }
 
-func GetSpotifyTokenObject() (*SpotifyTokenObject, error) {
-	token, err := GetTokenFromDB()
+func GetSpotifyTokenObject(hostId int64) (*SpotifyTokenObject, error) {
+	token, err := GetTokenFromDB(hostId)
 	if err != nil {
+		log.Println("Error with getting from db")
 		return nil, err
 	}
 
 	if checkIfTokenExpired(token) {
 		tokenRefresh, err := RefreshToken(token.RefreshToken, token.UserID)
 		if err != nil {
+			log.Println("Error with refresh")
 			return nil, err
 		}
 		token = tokenRefresh

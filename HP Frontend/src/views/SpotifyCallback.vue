@@ -36,7 +36,6 @@ const sendCodeToServer = async (code: string) => {
     console.log(data)
 
     userStore.activateSpotifyConnection();
-    console.log(userStore.credentials)
 
     successMessage.value = 'Spotify Connected! Redirecting....';
   }catch(error){

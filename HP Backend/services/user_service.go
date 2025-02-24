@@ -37,6 +37,11 @@ func ValidateCredentials(user *models.User) (string, error){
 		return "", errors.New("password that is provided is incorrect")
 	}
 
+	err = user.GetUserById(user.Id)
+	if err != nil{
+		return "", err
+	}
+
 	return utils.GenerateToken(user.Email, user.Username, user.Id)
 }
 

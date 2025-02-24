@@ -12,7 +12,7 @@ const GetUserByIdQuery = `SELECT id, username, email, spotify_connected FROM use
 
 const DeleteRoomQuery = `DELETE FROM rooms WHERE id = ?`
 
-const GetSpotifyToken = `SELECT access_token, token_type, scope, expires_in, referesh_token, time_issued, user_id FROM token WHERE user_id = ?`
+const GetSpotifyToken = `SELECT access_token, token_type, scope, expires_in, refresh_token, time_issued, user_id FROM token WHERE user_id = ?`
 
 const DeleteTokenQuery = "DELETE FROM token WHERE user_id = ?"
 

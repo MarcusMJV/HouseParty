@@ -68,6 +68,8 @@ type SetAndPlayCurrentSong struct {
 
 // Define Event Handlers
 func JoinRoom(event Event, c *Client) error {
+	room := c.Manager.Rooms[c.RoomID]
+
 	for client := range c.Manager.Rooms[c.RoomID].Clients {
 		if client == c {
 			continue
@@ -75,7 +77,7 @@ func JoinRoom(event Event, c *Client) error {
 		client.Egress <- event
 	}
 
-	apiToken, err := config.GetSpotifyTokenObject()
+	apiToken, err := config.GetSpotifyTokenObject(room.HostID)
 	if err != nil {
 		return err
 	}
@@ -103,11 +105,13 @@ func JoinRoom(event Event, c *Client) error {
 func SearchSongs(event Event, c *Client) error {
 	var searchEvent SearchSongsEvent
 	err := json.Unmarshal(event.Payload, &searchEvent)
+	room := c.Manager.Rooms[c.RoomID]
+
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	tracks, err := services.SearchSongs(searchEvent.Search)
+	tracks, err := services.SearchSongs(searchEvent.Search, room.HostID)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -135,7 +139,6 @@ func SearchSongs(event Event, c *Client) error {
 func AddSong(event Event, c *Client) error {
 	var addSongEvent AddSongEvent
 	var response Event
-
 	room := c.Manager.Rooms[c.RoomID]
 
 	err := json.Unmarshal(event.Payload, &addSongEvent)
@@ -143,7 +146,7 @@ func AddSong(event Event, c *Client) error {
 		return err
 	}
 
-	song, err := services.GetSongById(addSongEvent.SongId)
+	song, err := services.GetSongById(addSongEvent.SongId, room.HostID)
 	if err != nil {
 		return err
 	}

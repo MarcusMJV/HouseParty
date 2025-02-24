@@ -29,6 +29,7 @@ export const useUserStore = defineStore('user', {
     },
     activateSpotifyConnection() {
       this.credentials.spotify_connected = true
+      localStorage.setItem('credentials', JSON.stringify(this.credentials));
     },
     setCredentials(credentials: UserCredentials) {
       this.credentials = credentials;

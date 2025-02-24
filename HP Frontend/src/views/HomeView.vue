@@ -15,13 +15,24 @@ interface Room {
   created_at: string;
 }
 
+const emptyRoom: Room = {
+  id: '',
+  name: '',
+  description: '',
+  host_id: '',
+  host_name: '',
+  is_public: false,
+  created_at: ''
+};
+
+
 interface ApiResponse {
   message: string;
-  user_rooms: Room[];
+  user_room: Room;
   public_rooms: Room[];
 }
 
-const userRooms = ref<Room[]>([]);
+const userRoom = ref<Room>(emptyRoom);
 const publicRooms = ref<Room[]>([]);
 const username = ref<string>('');
 const errorMessage = ref('');
@@ -65,7 +76,7 @@ const deleteRoom = async (roomId: string) => {
     }
 
     successMessage.value = data.message;
-    userRooms.value = userRooms.value.filter(room => room.id !== roomId);
+    userRoom.value = emptyRoom
 
     setTimeout(() => {
       successMessage.value = '';
@@ -94,8 +105,12 @@ const getRooms = async () => {
 
     console.log(data);
 
-    userRooms.value = data.user_rooms;
-    publicRooms.value = data.public_rooms;
+    userRoom.value = data.user_room;
+
+    if( data.public_rooms?.length > 0){
+      publicRooms.value = data.public_rooms;
+    }
+
 
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -146,29 +161,29 @@ const requestSpotifyAuth = async () => {
         </div>
         <div class="relative flex justify-center">
           <span class="px-2 text-white bg-slate-950 text-sm">
-            {{ username }}'s Rooms
+            {{ username }}'s Room
           </span>
         </div>
       </div>
 
       <div class="flex flex-col items-center mt-4 space-y-4">
-        <div v-for="room in userRooms" :key="room.id" class="w-150 bg-slate-900 p-4 rounded-2xl shadow-lg flex items-center justify-between relative">
-          <button @click="deleteRoom(room.id)" class="absolute -top-1 -right-1 text-white hover:text-red-500 hover:cursor-pointer text-xs font-bold p-1 rounded-full transition-colors">x</button>
+        <div  v-if="userRoom.id != ''" class="w-150 bg-slate-900 p-4 rounded-2xl shadow-lg flex items-center justify-between relative">
+          <button @click="deleteRoom(userRoom.id)" class="absolute -top-1 -right-1 text-white hover:text-red-500 hover:cursor-pointer text-xs font-bold p-1 rounded-full transition-colors">x</button>
 
-          <span class="text-white">{{ room.name }}:</span>
-          <span class="text-white">{{ room.description }}</span>
-          <RouterLink :to="{name: 'join-room', params: {id: room.id}}" class="text-white bg-sky-500 p-2 rounded-lg hover:bg-sky-600 transition-colors hover:cursor-pointer">
+          <span class="text-white">{{ userRoom.name }}:</span>
+          <span class="text-white">{{ userRoom.description }}</span>
+          <RouterLink :to="{name: 'join-room', params: {id: userRoom.id}}" class="p-2 hover:cursor-pointer hover:bg-sky-500/100 border text-white font-semibold rounded-lg hover:bg-sky-600 transition duration-300">
             Join
           </RouterLink>
         </div>
       </div>
 
-      <router-link v-if="isSpotifyConnected" to="/create/room" class="p-2 hover:cursor-pointer rounded-lg shadow-lg flex items-center justify-center bg-sky-500 hover:bg-sky-600 transition-colors group mt-4">
+      <router-link v-if="isSpotifyConnected && userRoom.id == ''" to="/create/room" class="p-2 hover:cursor-pointer rounded-lg shadow-lg flex items-center justify-center bg-sky-500 hover:bg-sky-600 transition-colors group ">
        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-white group-hover:rotate-90 transition-transform">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
        </svg>
       </router-link>
-      <button v-else @click="requestSpotifyAuth" class="p-2 hover:cursor-pointer rounded-lg shadow-lg flex items-center justify-center bg-sky-500 hover:bg-sky-600 transition-colors group mt-4">
+      <button v-if="!isSpotifyConnected" @click="requestSpotifyAuth" class="p-2 hover:cursor-pointer hover:bg-sky-500/100 border text-white font-semibold py-3 rounded-lg hover:bg-sky-600 transition duration-300">
             Connect Spotify Account
       </button>
 
@@ -184,12 +199,13 @@ const requestSpotifyAuth = async () => {
       </div>
 
       <div class="flex flex-col items-center mt-4 space-y-4">
+        <p class="text-white" v-if="publicRooms?.length === 0">No public rooms available</p>
         <div v-for="room in publicRooms" :key="room.id" class="w-150 bg-slate-900 p-4 rounded-2xl shadow-lg mt-4 flex items-center justify-between relative">
           <span class="absolute -top-5 text-white text-xs font-bold p-1 rounded-full transition-colors">{{ room.host_name }}</span>
 
           <span class="text-white">{{ room.name }}:</span>
           <span class="text-white">{{ room.description }}</span>
-          <RouterLink :to="{name: 'join-room', params: {id: room.id}}" class="text-white bg-sky-500 p-2 rounded-lg hover:bg-sky-600 transition-colors hover:cursor-pointer">
+          <RouterLink :to="{name: 'join-room', params: {id: room.id}}" class="p-2 hover:cursor-pointer hover:bg-sky-500/100 border text-white font-semibold rounded-lg hover:bg-sky-600 transition duration-300">
             Join
           </RouterLink>
         </div>
