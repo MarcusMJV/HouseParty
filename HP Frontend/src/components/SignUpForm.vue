@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useUserStore } from '@/stores/user';
+import router from '@/router';
 
 const username = ref('');
 const email = ref('');
@@ -52,6 +53,8 @@ const handleSubmit = async (e: Event) => {
     const userStore = useUserStore();
     userStore.setJwt(data.token);
     userStore.setCredentials(data.user);
+
+    router.push({ name: 'home' });
 
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'An unexpected error occurred';

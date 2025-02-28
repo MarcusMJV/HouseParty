@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"sync"
 	"time"
 
@@ -88,16 +89,22 @@ func  GetUserRoom(userId int64) (*models.RoomResponse, error) {
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(userId).Scan(&room.ID, 
-									&room.Name, 
-									&room.Description, 
-									&room.HostID, 
-									&room.Public, 
-									&room.CreatedAt,
-									&room.HostName)
-	if err != nil {
+	row := stmt.QueryRow(userId)
+
+	err = row.Scan(&room.ID, 
+		&room.Name, 
+		&room.Description, 
+		&room.HostID, 
+		&room.Public, 
+		&room.CreatedAt,
+		&room.HostName)
+	
+	if err == sql.ErrNoRows{
+		return &room, nil
+	}else if err != nil {
 		return &room, err
 	}
+
 	return &room, nil
 }
 

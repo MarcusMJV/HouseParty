@@ -80,6 +80,7 @@ func (r *RoomData) PlaySong(song *models.Song, payload []byte)  {
 	}
 
 	r.SendEventToAllClients(event)
+	r.CurrentSongStartedAt = time.Now()
 
 	go func() {
 		<-timer.C

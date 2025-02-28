@@ -151,7 +151,8 @@ func SetSpotifyToken(code string, userId int64) (*SpotifyTokenObject, error) {
 
 func GenerateSpotifyAuthRequest() (string, error) {
 
-	scope := "streaming user-read-email user-read-private"
+	scope := "streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state" 
+
 	state := generateRandomString(16)
 	clientID := os.Getenv("SPOTIFY_CLIENT_ID")
 

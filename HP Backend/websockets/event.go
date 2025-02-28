@@ -3,6 +3,7 @@ package websockets
 import (
 	"encoding/json"
 	"log"
+	"time"
 
 	"houseparty.com/config"
 	"houseparty.com/models"
@@ -28,10 +29,11 @@ type EventHandler func(event Event, c *Client) error
 
 // Define Event Payloads
 type JoinedRoomEvent struct {
-	UserCount   int           `json:"user_count"`
-	PlayList    []models.Song `json:"playlist"`
-	CurrentSong *models.Song  `json:"current_song"`
-	ApiToken    string        `json:"api_token"`
+	UserCount    int           `json:"user_count"`
+	PlayList     []models.Song `json:"playlist"`
+	CurrentSong  *models.Song  `json:"current_song"`
+	ApiToken     string        `json:"api_token"`
+	SongPosition int64         `json:"song_position"`
 }
 type SongChangeEvent struct {
 	PlayList    []models.Song `json:"playlist"`
@@ -70,7 +72,7 @@ type SetAndPlayCurrentSong struct {
 func JoinRoom(event Event, c *Client) error {
 	room := c.Manager.Rooms[c.RoomID]
 
-	for client := range c.Manager.Rooms[c.RoomID].Clients {
+	for client := range room.Clients {
 		if client == c {
 			continue
 		}
@@ -81,12 +83,14 @@ func JoinRoom(event Event, c *Client) error {
 	if err != nil {
 		return err
 	}
+	songPosition := time.Since(room.CurrentSongStartedAt)
 
 	joinedEvent := JoinedRoomEvent{
-		UserCount:   len(c.Manager.Rooms[c.RoomID].Clients),
-		PlayList:    c.Manager.Rooms[c.RoomID].PlayList,
-		CurrentSong: c.Manager.Rooms[c.RoomID].CurrentSong,
-		ApiToken:    apiToken.AccessToken,
+		UserCount:    len(room.Clients),
+		PlayList:     room.PlayList,
+		CurrentSong:  room.CurrentSong,
+		ApiToken:     apiToken.AccessToken,
+		SongPosition: songPosition.Milliseconds(),
 	}
 
 	joinedPayload, err := json.Marshal(joinedEvent)

@@ -16,6 +16,7 @@ const currentSong = ref<Song>()
 const queuedSongs = ref<Song[]>([])
 const showSearchPanel = ref(false)
 const searchQuery = ref('')
+let songPostion = 0
 const searchResults = ref<Song[]>([])
 const containerRef = ref<HTMLElement | null>(null)
 const shouldScroll = ref(false)
@@ -152,7 +153,7 @@ const handleSocketMessage = (message: any) => {
       const incomingSong = message.payload.song as Song
       queuedSongs.value = queuedSongs.value.filter((song) => song.id !== incomingSong.id)
       currentSong.value = incomingSong
-      playSong();
+      playSong()
       break
 
     case 'added-song-playlist':
@@ -170,6 +171,7 @@ const handleSocketMessage = (message: any) => {
         queuedSongs.value = message.payload.playlist
       }
       usersCount.value = message.payload.user_count
+      songPostion = message.song_position
       break
 
     case 'joined-room':
@@ -198,7 +200,7 @@ onBeforeUnmount(() => {
     socket.value.close(1000, 'Component unmounted')
     socket.value = null
   }
-  if(player.value){
+  if (player.value) {
     player.value.disconnect()
   }
   window.removeEventListener('resize', checkHeight)
@@ -218,6 +220,25 @@ async function initSpotifyPlayer() {
 
   newPlayer.addListener('ready', ({ device_id }: any) => {
     deviceId.value = device_id
+
+    fetch('https://api.spotify.com/v1/me/player', {
+            method: 'PUT',
+            headers: {
+              'Authorization': 'Bearer ' + apiToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              device_ids: [device_id],
+              play: false  // Important: Don't start playback automatically
+            })
+          }).catch(error => console.error('Error setting active device:', error));
+
+    if (currentSong.value?.uri) {
+      playSong()
+      newPlayer.seek(songPostion).then(() => {
+        console.log('Changed position!')
+      })
+    }
   })
 
   // newPlayer.addListener('initialization_error', ({ message }: any) =>
@@ -403,11 +424,14 @@ async function playSong() {
           />
           <button
             @click="searchSongs"
-            class="p-2 bg-sky-500 rounded-lg text-white hover:cursor-pointer"
+            class="p-2 hover:cursor-pointer hover:bg-sky-500/100 border text-white font-semibold rounded-lg hover:bg-sky-600 transition duration-300"
           >
             Search
           </button>
-          <button @click="toggleSearchPanel" class="p-2 text-slate-400 hover:text-white">
+          <button
+            @click="toggleSearchPanel"
+            class="p-2 text-slate-400 hover:text-white hover:cursor-pointer"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-6 w-6"
