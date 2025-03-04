@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -86,7 +87,13 @@ func SpotifyTokenCallBack(context *gin.Context){
 
 func TestGetToken(context *gin.Context){
 	token, err := config.GetSpotifyTokenObject(1)
+	log.Println(token)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	token, err = config.RefreshToken(token.RefreshToken, 1)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

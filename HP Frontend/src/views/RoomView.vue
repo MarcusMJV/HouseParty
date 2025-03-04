@@ -136,7 +136,7 @@ const handleSocketMessage = (message: any) => {
       queuedSongs.value = queuedSongs.value.filter((song) => song.id !== incomingSong.id)
       currentSong.value = incomingSong
       songPosition.value = 0
-      playSong(0)
+      playSong()
       break
 
     case 'added-song-playlist':
@@ -145,7 +145,7 @@ const handleSocketMessage = (message: any) => {
 
     case 'room-information':
       apiToken = message.payload.api_token
-      initSpotifyPlayer()
+
 
       if (message.payload.current_song?.uri != '') {
         currentSong.value = message.payload.current_song
@@ -154,7 +154,8 @@ const handleSocketMessage = (message: any) => {
         queuedSongs.value = message.payload.playlist
       }
       usersCount.value = message.payload.user_count
-      songPosition.value = message.song_position
+      songPosition.value = message.payload.song_position
+
       break
 
     case 'joined-room':
@@ -185,6 +186,7 @@ onBeforeUnmount(() => {
   }
   if (player.value) {
     player.value.disconnect()
+    player.value = null
   }
   window.removeEventListener('resize', checkHeight)
 })
@@ -219,35 +221,27 @@ async function initSpotifyPlayer() {
     volume: 0.5,
   })
 
-  newPlayer.addListener('ready', ({ device_id }: any) => {
+  newPlayer.addListener('ready', async ({ device_id }: any) => {
     deviceId.value = device_id
 
-    // fetch('https://api.spotify.com/v1/me/player', {
-    //         method: 'PUT',
-    //         headers: {
-    //           'Authorization': 'Bearer ' + apiToken,
-    //           'Content-Type': 'application/json'
-    //         },
-    //         body: JSON.stringify({
-    //           device_ids: [device_id],
-    //           play: false  // Important: Don't start playback automatically
-    //         })
-    //       }).catch(error => console.error('Error setting active device:', error));
+    await fetch('https://api.spotify.com/v1/me/player', {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        device_ids: [device_id],
+        play: false, // Don’t auto-play yet
+      }),
+    })
+
 
     if (currentSong.value?.uri) {
-      playSong(songPosition.value)
+      playSong()
     }
   })
 
-  // newPlayer.addListener('player_state_changed', (state) => {
-  //   console.log('Player state:', state)
-  //   if (!state.paused && songPosition.value > 0 ) {
-  //     newPlayer
-  //       .seek(songPosition.value)
-  //       .then(() => console.log('Changed position!'))
-  //       .catch((err) => console.error('Seek failed:', err))
-  //   }
-  // })
 
   newPlayer.addListener('initialization_error', ({ message }: any) =>
     console.error('Initialization Error:', message),
@@ -275,12 +269,11 @@ onMounted(() => {
   initSpotifyPlayer()
 })
 
-const playSong = async (position: number) => {
-  console.log(position)
+const playSong = async () => {
   if (deviceId.value && currentSong.value?.uri) {
     await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId.value}`, {
       method: 'PUT',
-      body: JSON.stringify({ uris: [currentSong.value?.uri] }),
+      body: JSON.stringify({ uris: [currentSong.value?.uri], position_ms: songPosition.value }),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiToken}`,
@@ -288,18 +281,6 @@ const playSong = async (position: number) => {
     })
 
 
-
-    if (songPosition.value > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 3000))
-      console.log(position)
-      await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${position}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiToken}`,
-        },
-      })
-    }
   } else {
     console.warn('Device ID or song URI is not available yet.')
     console.log('uri: ' + currentSong.value?.uri)

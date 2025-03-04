@@ -83,14 +83,11 @@ func GetSpotifyTokenObject(hostId int64) (*SpotifyTokenObject, error) {
 	}
 
 	if checkIfTokenExpired(token) {
-		if token.RefreshToken != "" {
-			tokenRefresh, err := RefreshToken(token.RefreshToken, token.UserID)
-			if err != nil {
-				log.Println(token.RefreshToken)
-				return nil, err
-			}
-			token = tokenRefresh
+		tokenRefresh, err := RefreshToken(token.RefreshToken, token.UserID)
+		if err != nil {
+			return nil, err
 		}
+		token = tokenRefresh
 	}
 
 	return token, nil
@@ -219,6 +216,7 @@ func RefreshToken(refreshToken string, userId int64) (*SpotifyTokenObject, error
 	if err := json.NewDecoder(resp.Body).Decode(&tokenObject); err != nil {
 		return nil, err
 	}
+	log.Println(tokenObject.RefreshToken)
 	tokenObject.TimeIssued = int((int64)(time.Now().Unix()))
 	tokenObject.UserID = userId
 
@@ -228,3 +226,5 @@ func RefreshToken(refreshToken string, userId int64) (*SpotifyTokenObject, error
 	}
 	return &tokenObject, nil
 }
+
+
