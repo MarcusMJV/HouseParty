@@ -145,7 +145,7 @@ const handleSocketMessage = (message: any) => {
 
     case 'room-information':
       apiToken = message.payload.api_token
-
+      initSpotifyPlayer()
 
       if (message.payload.current_song?.uri != '') {
         currentSong.value = message.payload.current_song
@@ -188,6 +188,8 @@ onBeforeUnmount(() => {
     player.value.disconnect()
     player.value = null
   }
+
+  
   window.removeEventListener('resize', checkHeight)
 })
 
@@ -265,9 +267,6 @@ async function initSpotifyPlayer() {
   console.log('Player has been initialized')
 }
 
-onMounted(() => {
-  initSpotifyPlayer()
-})
 
 const playSong = async () => {
   if (deviceId.value && currentSong.value?.uri) {

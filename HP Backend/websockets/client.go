@@ -11,25 +11,31 @@ import (
 
 type ClientList map[*Client]bool
 type PlayList []models.Song
+type SkipRecord []int64
 
 type Client struct {
+	User       *models.User
 	Connection *websocket.Conn
-	RoomID string
-	Manager *Manager
-	Egress chan Event
+	RoomID     string
+	Manager    *Manager
+	Egress     chan Event
 }
 
 var (
-	pongWait = 60 * time.Second
+	pongWait     = 60 * time.Second
 	pingInterval = (pongWait * 9) / 10
 )
 
-func NewClient(connection *websocket.Conn, manager *Manager, RoomID string) *Client {
+func NewClient(connection *websocket.Conn, manager *Manager, RoomID string, userId int64) *Client {
+	var user *models.User
+	user.GetUserById(userId)
+
 	return &Client{
+		User: user,
 		Connection: connection,
-		RoomID: RoomID,
-		Manager: manager,
-		Egress: make(chan Event),
+		RoomID:     RoomID,
+		Manager:    manager,
+		Egress:     make(chan Event),
 	}
 }
 
@@ -41,7 +47,7 @@ func (c *Client) ReadMessages() {
 	err := c.Connection.SetReadDeadline(time.Now().Add(pongWait))
 	if err != nil {
 		log.Println("failed to set read deadline: ", err.Error())
-		return	
+		return
 	}
 
 	c.Connection.SetReadLimit(512)
@@ -68,7 +74,6 @@ func (c *Client) ReadMessages() {
 			break
 		}
 
-		
 	}
 }
 
@@ -84,7 +89,7 @@ func (c *Client) WriteMessages() {
 		case message, ok := <-c.Egress:
 
 			if !ok {
-				if err := c.Connection.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {	
+				if err := c.Connection.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
 					log.Println("conncetion closed: ", err.Error())
 				}
 				return
@@ -94,9 +99,9 @@ func (c *Client) WriteMessages() {
 			if err != nil {
 				log.Println("failed to marshal message: ", err.Error())
 				return
-			}	
+			}
 
-			if err := c.Connection.WriteMessage(websocket.TextMessage, data); err != nil {	
+			if err := c.Connection.WriteMessage(websocket.TextMessage, data); err != nil {
 				log.Println("failed to send message: ", err.Error())
 			}
 

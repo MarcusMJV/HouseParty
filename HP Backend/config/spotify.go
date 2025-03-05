@@ -57,6 +57,20 @@ func (s *SpotifyTokenObject) SaveToken() error {
 	return nil
 }
 
+func (s *SpotifyTokenObject) UpdateToken() error {
+	stmt, err := storage.DB.Prepare(storage.UpdateTokenQuery)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(s.AccessToken, s.TokenType, s.Scope, s.ExpiresIn, s.TimeIssued, s.UserID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GetTokenFromDB(hostId int64) (*SpotifyTokenObject, error) {
 	var token SpotifyTokenObject
 	row := storage.DB.QueryRow(storage.GetSpotifyToken, hostId)
@@ -216,11 +230,11 @@ func RefreshToken(refreshToken string, userId int64) (*SpotifyTokenObject, error
 	if err := json.NewDecoder(resp.Body).Decode(&tokenObject); err != nil {
 		return nil, err
 	}
-	log.Println(tokenObject.RefreshToken)
+	log.Println(resp.Body)
 	tokenObject.TimeIssued = int((int64)(time.Now().Unix()))
 	tokenObject.UserID = userId
 
-	err = tokenObject.SaveToken()
+	err = tokenObject.UpdateToken()
 	if err != nil {
 		return nil, err
 	}

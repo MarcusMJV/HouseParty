@@ -22,6 +22,15 @@ const SaveTokenQuery = `
 INSERT INTO token(access_token, token_type, scope, expires_in, refresh_token, time_issued, user_id) 
 VALUES(?, ?, ?, ?, ?, ?, ?)`
 
+const UpdateTokenQuery = `
+UPDATE token 
+SET access_token = ?, 
+    token_type = ?, 
+    scope = ?, 
+    expires_in = ?, 
+    time_issued = ? 
+WHERE user_id = ?`
+
 const PublicRoomsQuery = `
 SELECT 
     rooms.id, 

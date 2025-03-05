@@ -2,28 +2,33 @@ package websockets
 
 import (
 	"encoding/json"
-	"time"
 	"houseparty.com/config"
 	"houseparty.com/models"
+	"time"
 )
- 
+
 type RoomDataList map[string]*RoomData
 
 type RoomData struct {
 	*models.Room
-	Clients ClientList
-	PlayList PlayList
-	CurrentSong *models.Song
+	Clients              ClientList
+	PlayList             PlayList
+	CurrentSong          *models.Song
 	CurrentSongStartedAt time.Time
+	SkipCount            int
+	UserSkipRecord       SkipRecord
 }
 
 func NewRoomData(room *models.Room) *RoomData {
 	var roomPlaylist []models.Song
+	
 	return &RoomData{
-		Room: room,
-		Clients: make(ClientList),
-		PlayList: roomPlaylist,
+		Room:        room,
+		Clients:     make(ClientList),
+		PlayList:    roomPlaylist,
 		CurrentSong: nil,
+		SkipCount:   0,
+		UserSkipRecord: SkipRecord{},
 	}
 }
 
@@ -50,7 +55,7 @@ func (r *RoomData) AddSongToPlaylist(song *models.Song, name string) ([]byte, er
 
 func (r *RoomData) SetCurrentSong(song *models.Song) error {
 	r.CurrentSong = song
-	tokenObject , err:= config.GetSpotifyTokenObject(r.HostID)
+	tokenObject, err := config.GetSpotifyTokenObject(r.HostID)
 
 	if err != nil {
 		return err
@@ -58,7 +63,7 @@ func (r *RoomData) SetCurrentSong(song *models.Song) error {
 
 	response := SetAndPlayCurrentSong{
 		ApiToken: tokenObject.AccessToken,
-		Song: song,
+		Song:     song,
 	}
 
 	payload, err := json.Marshal(response)
@@ -70,12 +75,12 @@ func (r *RoomData) SetCurrentSong(song *models.Song) error {
 	return nil
 }
 
-func (r *RoomData) PlaySong(song *models.Song, payload []byte)  {
+func (r *RoomData) PlaySong(song *models.Song, payload []byte) {
 	r.CurrentSong = song
 	timer := time.NewTimer(time.Duration(song.DurationMs) * time.Millisecond)
 
 	event := Event{
-		Type: SetAndPlaySong,
+		Type:    SetAndPlaySong,
 		Payload: payload,
 	}
 
@@ -84,15 +89,19 @@ func (r *RoomData) PlaySong(song *models.Song, payload []byte)  {
 
 	go func() {
 		<-timer.C
-		r.HandleSongFinished()
+		r.HandleSongSkip()
 	}()
 }
 
-func (r *RoomData) HandleSongFinished() {
+func (r *RoomData) HandleSongSkip() {
 	if len(r.PlayList) > 0 {
 		nextSong := r.PlayList[0]
 		r.PlayList = r.PlayList[1:]
 
 		r.SetCurrentSong(&nextSong)
 	}
+}
+
+func (r *RoomData) HandleUserLeaving() {
+	
 }

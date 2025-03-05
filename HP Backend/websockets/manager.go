@@ -56,6 +56,7 @@ func (m *Manager) SetupEventHandlers(){
 	m.Handlers[EventJoinRoom] = JoinRoom
 	m.Handlers[EventSearchSongs] = SearchSongs
 	m.Handlers[EventAddSong] = AddSong
+	m.Handlers[EventSkipRequest] = SkipSongRequest
 }
 
 func (m *Manager) AddClient(client *Client) {
@@ -74,7 +75,10 @@ func (m *Manager) AddClient(client *Client) {
 func (m *Manager) RemoveClient(client *Client) {
 	m.Lock()
 	defer m.Unlock()
-	if _, ok := m.Rooms[client.RoomID].Clients[client]; ok {
+	room := m.Rooms[client.RoomID]
+	
+
+	if _, ok := room.Clients[client]; ok {
 		client.Connection.Close()
 		delete(m.Rooms[client.RoomID].Clients, client)
 	}
@@ -94,7 +98,7 @@ func (m *Manager) ServeWs() gin.HandlerFunc {
 
 		log.Println("Connection Upgraded")
 		
-		client := NewClient(conn, m, roomId)
+		client := NewClient(conn, m, roomId, c.GetInt64("userId"))
 		m.AddClient(client)
 
 		go client.ReadMessages()

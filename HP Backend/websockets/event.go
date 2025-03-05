@@ -3,6 +3,7 @@ package websockets
 import (
 	"encoding/json"
 	"log"
+	"slices"
 	"time"
 
 	"houseparty.com/config"
@@ -18,6 +19,9 @@ const (
 	EventPlaySong     = "play-song"
 	AddedSongPlaylist = "added-song-playlist"
 	SetAndPlaySong    = "set-and-play-song"
+	//add to frontend
+	EventSkipRequest = "skip-request"
+	EventSongSkipped = "song-skipped"
 )
 
 // Define Event Struct and Event Handler
@@ -173,3 +177,29 @@ func AddSong(event Event, c *Client) error {
 
 	return nil
 }
+
+func SkipSongRequest(event Event, c *Client) error {
+
+	room := c.Manager.Rooms[c.RoomID]
+	if slices.Contains(room.UserSkipRecord[:], c.User.Id) {
+		return nil
+	}
+
+	var response Event
+	threshold := len(room.Clients) / 2
+	room.SkipCount += 1
+
+	if room.SkipCount >= threshold {
+		room.HandleSongSkip()
+		response.Type = EventSongSkipped
+		room.UserSkipRecord = SkipRecord{}
+	} else {
+		response = event
+		room.UserSkipRecord = append(room.UserSkipRecord, c.User.Id)
+	}
+
+	room.SendEventToAllClients(response)
+	return nil
+}
+
+
