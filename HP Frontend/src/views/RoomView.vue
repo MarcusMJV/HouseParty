@@ -111,6 +111,17 @@ const searchSongs = () => {
   )
 }
 
+const skipSong = () => {
+  socket.value?.send(
+    JSON.stringify({
+      type: 'skip-request',
+      payload: {
+        from: user.credentials?.username,
+      },
+    }),
+  )
+}
+
 const addSong = (songId: string) => {
   socket.value?.send(
     JSON.stringify({
@@ -189,7 +200,6 @@ onBeforeUnmount(() => {
     player.value = null
   }
 
-  
   window.removeEventListener('resize', checkHeight)
 })
 
@@ -229,7 +239,7 @@ async function initSpotifyPlayer() {
     await fetch('https://api.spotify.com/v1/me/player', {
       method: 'PUT',
       headers: {
-        'Authorization': 'Bearer ' + token,
+        Authorization: 'Bearer ' + token,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -238,12 +248,10 @@ async function initSpotifyPlayer() {
       }),
     })
 
-
     if (currentSong.value?.uri) {
       playSong()
     }
   })
-
 
   newPlayer.addListener('initialization_error', ({ message }: any) =>
     console.error('Initialization Error:', message),
@@ -267,7 +275,6 @@ async function initSpotifyPlayer() {
   console.log('Player has been initialized')
 }
 
-
 const playSong = async () => {
   if (deviceId.value && currentSong.value?.uri) {
     await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId.value}`, {
@@ -278,8 +285,6 @@ const playSong = async () => {
         Authorization: `Bearer ${apiToken}`,
       },
     })
-
-
   } else {
     console.warn('Device ID or song URI is not available yet.')
     console.log('uri: ' + currentSong.value?.uri)
@@ -388,6 +393,7 @@ const playSong = async () => {
       </button>
 
       <button
+        @click="skipSong"
         class="p-3 bg-sky-500/20 rounded-full hover:cursor-pointer hover:bg-sky-500/30 transition-colors"
       >
         <svg

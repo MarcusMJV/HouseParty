@@ -27,11 +27,13 @@ var (
 )
 
 func NewClient(connection *websocket.Conn, manager *Manager, RoomID string, userId int64) *Client {
-	var user *models.User
+	var user models.User
 	user.GetUserById(userId)
 
+	log.Println("USERNAME IS HERE :", user.Username)
+
 	return &Client{
-		User: user,
+		User: &user,
 		Connection: connection,
 		RoomID:     RoomID,
 		Manager:    manager,

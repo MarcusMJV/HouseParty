@@ -96,7 +96,7 @@ func (m *Manager) ServeWs() gin.HandlerFunc {
             return
         }
 
-		log.Println("Connection Upgraded")
+		log.Println("USER ID IS HERE: ", c.GetInt64("userId"))
 		
 		client := NewClient(conn, m, roomId, c.GetInt64("userId"))
 		m.AddClient(client)

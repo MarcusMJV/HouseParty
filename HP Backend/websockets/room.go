@@ -1,10 +1,12 @@
 package websockets
 
 import (
+	"context"
 	"encoding/json"
+	"time"
+
 	"houseparty.com/config"
 	"houseparty.com/models"
-	"time"
 )
 
 type RoomDataList map[string]*RoomData
@@ -15,20 +17,22 @@ type RoomData struct {
 	PlayList             PlayList
 	CurrentSong          *models.Song
 	CurrentSongStartedAt time.Time
-	SkipCount            int
 	UserSkipRecord       SkipRecord
+	currentCtx           context.Context
+	cancelCurrent        context.CancelFunc
 }
 
 func NewRoomData(room *models.Room) *RoomData {
 	var roomPlaylist []models.Song
-	
+
 	return &RoomData{
-		Room:        room,
-		Clients:     make(ClientList),
-		PlayList:    roomPlaylist,
-		CurrentSong: nil,
-		SkipCount:   0,
+		Room:           room,
+		Clients:        make(ClientList),
+		PlayList:       roomPlaylist,
+		CurrentSong:    nil,
 		UserSkipRecord: SkipRecord{},
+		currentCtx:     nil,
+		cancelCurrent:  nil,
 	}
 }
 
@@ -84,12 +88,20 @@ func (r *RoomData) PlaySong(song *models.Song, payload []byte) {
 		Payload: payload,
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	r.currentCtx = ctx
+	r.cancelCurrent = cancel
+
 	r.SendEventToAllClients(event)
 	r.CurrentSongStartedAt = time.Now()
 
 	go func() {
-		<-timer.C
-		r.HandleSongSkip()
+		select {
+		case <-timer.C:
+			r.HandleSongSkip()
+		case <-ctx.Done():
+			return
+		}
 	}()
 }
 
@@ -100,8 +112,4 @@ func (r *RoomData) HandleSongSkip() {
 
 		r.SetCurrentSong(&nextSong)
 	}
-}
-
-func (r *RoomData) HandleUserLeaving() {
-	
 }
