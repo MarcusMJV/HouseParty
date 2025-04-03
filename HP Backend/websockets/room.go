@@ -1,7 +1,6 @@
 package websockets
 
 import (
-	"context"
 	"encoding/json"
 	"time"
 
@@ -11,6 +10,8 @@ import (
 
 type RoomDataList map[string]*RoomData
 
+var cancelChan = make(chan bool)
+
 type RoomData struct {
 	*models.Room
 	Clients              ClientList
@@ -18,8 +19,6 @@ type RoomData struct {
 	CurrentSong          *models.Song
 	CurrentSongStartedAt time.Time
 	UserSkipRecord       SkipRecord
-	currentCtx           context.Context
-	cancelCurrent        context.CancelFunc
 }
 
 func NewRoomData(room *models.Room) *RoomData {
@@ -31,8 +30,6 @@ func NewRoomData(room *models.Room) *RoomData {
 		PlayList:       roomPlaylist,
 		CurrentSong:    nil,
 		UserSkipRecord: SkipRecord{},
-		currentCtx:     nil,
-		cancelCurrent:  nil,
 	}
 }
 
@@ -88,10 +85,6 @@ func (r *RoomData) PlaySong(song *models.Song, payload []byte) {
 		Payload: payload,
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	r.currentCtx = ctx
-	r.cancelCurrent = cancel
-
 	r.SendEventToAllClients(event)
 	r.CurrentSongStartedAt = time.Now()
 
@@ -99,7 +92,7 @@ func (r *RoomData) PlaySong(song *models.Song, payload []byte) {
 		select {
 		case <-timer.C:
 			r.HandleSongSkip()
-		case <-ctx.Done():
+		case <-cancelChan:
 			return
 		}
 	}()
@@ -109,6 +102,8 @@ func (r *RoomData) HandleSongSkip() {
 	if len(r.PlayList) > 0 {
 		nextSong := r.PlayList[0]
 		r.PlayList = r.PlayList[1:]
+
+		cancelChan <- true
 
 		r.SetCurrentSong(&nextSong)
 	}
