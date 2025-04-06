@@ -160,7 +160,7 @@ func AddSong(event Event, c *Client) error {
 	}
 
 	if room.CurrentSong == nil {
-		err := room.SetCurrentSong(song)
+		err := room.PrepareSongToPlay(song)
 		if err != nil {
 			return err
 		}
@@ -179,7 +179,6 @@ func AddSong(event Event, c *Client) error {
 }
 
 func SkipSongRequest(event Event, c *Client) error {
-
 	room := c.Manager.Rooms[c.RoomID]
 	if slices.Contains(room.UserSkipRecord[:], c.User.Id) {
 		return nil
@@ -191,7 +190,7 @@ func SkipSongRequest(event Event, c *Client) error {
 	room.UserSkipRecord = append(room.UserSkipRecord, c.User.Id)
 
 	if len(room.UserSkipRecord) > threshold {
-		room.HandleSongSkip()
+		room.SkipChan <- true
 		room.UserSkipRecord = SkipRecord{}
 	} else {
 		room.UserSkipRecord = append(room.UserSkipRecord, c.User.Id)

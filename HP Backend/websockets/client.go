@@ -33,7 +33,7 @@ func NewClient(connection *websocket.Conn, manager *Manager, RoomID string, user
 	log.Println("USERNAME IS HERE :", user.Username)
 
 	return &Client{
-		User: &user,
+		User:       &user,
 		Connection: connection,
 		RoomID:     RoomID,
 		Manager:    manager,

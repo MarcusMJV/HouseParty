@@ -10,8 +10,6 @@ import (
 
 type RoomDataList map[string]*RoomData
 
-var cancelChan = make(chan bool)
-
 type RoomData struct {
 	*models.Room
 	Clients              ClientList
@@ -19,6 +17,7 @@ type RoomData struct {
 	CurrentSong          *models.Song
 	CurrentSongStartedAt time.Time
 	UserSkipRecord       SkipRecord
+	SkipChan             chan bool
 }
 
 func NewRoomData(room *models.Room) *RoomData {
@@ -30,6 +29,7 @@ func NewRoomData(room *models.Room) *RoomData {
 		PlayList:       roomPlaylist,
 		CurrentSong:    nil,
 		UserSkipRecord: SkipRecord{},
+		SkipChan:       make(chan bool),
 	}
 }
 
@@ -54,8 +54,7 @@ func (r *RoomData) AddSongToPlaylist(song *models.Song, name string) ([]byte, er
 	return payload, nil
 }
 
-func (r *RoomData) SetCurrentSong(song *models.Song) error {
-	r.CurrentSong = song
+func (r *RoomData) PrepareSongToPlay(song *models.Song) error {
 	tokenObject, err := config.GetSpotifyTokenObject(r.HostID)
 
 	if err != nil {
@@ -72,7 +71,12 @@ func (r *RoomData) SetCurrentSong(song *models.Song) error {
 		return err
 	}
 
-	r.PlaySong(song, payload)
+	if r.CurrentSong == nil && len(r.PlayList) == 0 {
+		go r.PlaySong(song, payload)
+	} else {
+		r.PlaySong(song, payload)
+	}
+
 	return nil
 }
 
@@ -88,14 +92,14 @@ func (r *RoomData) PlaySong(song *models.Song, payload []byte) {
 	r.SendEventToAllClients(event)
 	r.CurrentSongStartedAt = time.Now()
 
-	go func() {
-		select {
-		case <-timer.C:
-			r.HandleSongSkip()
-		case <-cancelChan:
-			return
-		}
-	}()
+	select {
+	case <-timer.C:
+		r.HandleSongSkip()
+	case <-r.SkipChan:
+		timer.Stop()
+		r.HandleSongSkip()
+	}
+
 }
 
 func (r *RoomData) HandleSongSkip() {
@@ -103,8 +107,6 @@ func (r *RoomData) HandleSongSkip() {
 		nextSong := r.PlayList[0]
 		r.PlayList = r.PlayList[1:]
 
-		cancelChan <- true
-
-		r.SetCurrentSong(&nextSong)
+		r.PrepareSongToPlay(&nextSong)
 	}
 }
