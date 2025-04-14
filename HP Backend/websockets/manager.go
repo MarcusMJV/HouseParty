@@ -13,9 +13,9 @@ import (
 
 var (
 	websocketUpgrader = websocket.Upgrader{
-		ReadBufferSize: 1024,
+		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
-		CheckOrigin: checkOrigin,
+		CheckOrigin:     checkOrigin,
 	}
 )
 
@@ -36,7 +36,7 @@ func (m *Manager) routeEvent(event Event, c *Client) error {
 		if err := handler(event, c); err != nil {
 			return err
 		}
-	}else{
+	} else {
 		return errors.New("no handler for event type")
 	}
 	return nil
@@ -44,7 +44,7 @@ func (m *Manager) routeEvent(event Event, c *Client) error {
 
 func NewManager() *Manager {
 	m := &Manager{
-		Rooms: make(RoomDataList),
+		Rooms:    make(RoomDataList),
 		Handlers: make(map[string]EventHandler),
 	}
 
@@ -52,11 +52,12 @@ func NewManager() *Manager {
 	return m
 }
 
-func (m *Manager) SetupEventHandlers(){
+func (m *Manager) SetupEventHandlers() {
 	m.Handlers[EventJoinRoom] = JoinRoom
 	m.Handlers[EventSearchSongs] = SearchSongs
 	m.Handlers[EventAddSong] = AddSong
 	m.Handlers[EventSkipRequest] = SkipSongRequest
+	m.Handlers[UserLeft] = HandleUserLeaving
 }
 
 func (m *Manager) AddClient(client *Client) {
@@ -76,34 +77,34 @@ func (m *Manager) RemoveClient(client *Client) {
 	m.Lock()
 	defer m.Unlock()
 	room := m.Rooms[client.RoomID]
-	
 
 	if _, ok := room.Clients[client]; ok {
 		client.Connection.Close()
 		delete(m.Rooms[client.RoomID].Clients, client)
 	}
+
 }
 
 func (m *Manager) ServeWs() gin.HandlerFunc {
-    return func(c *gin.Context) {
+	return func(c *gin.Context) {
 		log.Println("New Connection")
 
 		roomId := c.Param("id")
 
-        conn, err := websocketUpgrader.Upgrade(c.Writer, c.Request, nil)
-        if err != nil {
-            c.AbortWithError(http.StatusInternalServerError, err)
-            return
-        }
+		conn, err := websocketUpgrader.Upgrade(c.Writer, c.Request, nil)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
 
 		log.Println("USER ID IS HERE: ", c.GetInt64("userId"))
-		
+
 		client := NewClient(conn, m, roomId, c.GetInt64("userId"))
 		m.AddClient(client)
 
 		go client.ReadMessages()
 		go client.WriteMessages()
-    }
+	}
 }
 
 func checkOrigin(r *http.Request) bool {

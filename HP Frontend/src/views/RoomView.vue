@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import HousePartyLogo from '@/components/HousePartyLogo.vue'
 import type { Song } from '@/types/spotify'
+import { RefSymbol } from '@vue/reactivity'
 
 const route = useRoute()
 const socket = ref<WebSocket | null>(null)
@@ -12,7 +13,7 @@ const roomId = route.params.id as string
 const user = useUserStore()
 const messages = ref<string[]>([])
 const usersCount = ref(1)
-const currentSong = ref<Song>()
+const currentSong = ref<Song | null>()
 const queuedSongs = ref<Song[]>([])
 const showSearchPanel = ref(false)
 const searchQuery = ref('')
@@ -23,6 +24,8 @@ const shouldScroll = ref(false)
 let apiToken: string
 const player = ref<any>()
 const deviceId = ref<string | null>(null)
+const remainingTime = ref<number>(0)
+let timerInterval: ReturnType<typeof setInterval> | null = null
 
 declare global {
   interface Window {
@@ -122,6 +125,17 @@ const skipSong = () => {
   )
 }
 
+const leaveRoom = () => {
+  socket.value?.send(
+    JSON.stringify({
+      type: 'user-left',
+      payload: {
+        from: user.credentials?.username,
+      },
+    }),
+  )
+}
+
 const addSong = (songId: string) => {
   socket.value?.send(
     JSON.stringify({
@@ -138,8 +152,19 @@ const addSong = (songId: string) => {
 const handleSocketMessage = (message: any) => {
   console.log(message)
   switch (message.type) {
+    case 'user-left':
+      usersCount.value -= 1
+      break
     case 'search-songs':
       searchResults.value = message.payload.songs
+      break
+
+    case 'final-song-ended':
+      currentSong.value = null
+      if (timerInterval) {
+        clearInterval(timerInterval)
+        timerInterval = null
+      }
       break
 
     case 'set-and-play-song':
@@ -147,6 +172,12 @@ const handleSocketMessage = (message: any) => {
       queuedSongs.value = queuedSongs.value.filter((song) => song.id !== incomingSong.id)
       currentSong.value = incomingSong
       songPosition.value = 0
+
+      if (currentSong.value?.duration_ms) {
+        remainingTime.value = currentSong.value.duration_ms
+        startCountdownTimer()
+      }
+
       playSong()
       break
 
@@ -160,6 +191,11 @@ const handleSocketMessage = (message: any) => {
 
       if (message.payload.current_song?.uri != '') {
         currentSong.value = message.payload.current_song
+
+        if (currentSong.value?.duration_ms) {
+          remainingTime.value = currentSong.value.duration_ms - message.payload.song_position
+          startCountdownTimer()
+        }
       }
       if (message.payload.playlist?.length > 0) {
         queuedSongs.value = message.payload.playlist
@@ -183,6 +219,21 @@ const handleSocketMessage = (message: any) => {
   }
 }
 
+const startCountdownTimer = () => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+  }
+
+  timerInterval = setInterval(() => {
+    if (remainingTime.value > 0) {
+      remainingTime.value = Math.max(0, remainingTime.value - 1000)
+    } else if (timerInterval) {
+      clearInterval(timerInterval)
+      timerInterval = null
+    }
+  }, 1000)
+}
+
 const formatDuration = (ms: number | undefined) => {
   if (!ms) return '0:00'
   const minutes = Math.floor(ms / 60000)
@@ -192,12 +243,17 @@ const formatDuration = (ms: number | undefined) => {
 
 onBeforeUnmount(() => {
   if (socket.value) {
+    leaveRoom()
     socket.value.close(1000, 'Component unmounted')
     socket.value = null
   }
   if (player.value) {
     player.value.disconnect()
     player.value = null
+  }
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
   }
 
   window.removeEventListener('resize', checkHeight)
@@ -327,8 +383,8 @@ const playSong = async () => {
                 <p class="text-slate-400 text-sm">{{ currentSong?.artists.join(', ') }}</p>
               </div>
             </div>
-            <span class="text-slate-400 text-sm">
-              {{ formatDuration(currentSong?.duration_ms) }}
+            <span class="text-white text-sm">
+              {{ formatDuration(remainingTime) }}
             </span>
           </div>
         </div>

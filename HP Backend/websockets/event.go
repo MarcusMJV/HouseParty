@@ -19,9 +19,10 @@ const (
 	EventPlaySong     = "play-song"
 	AddedSongPlaylist = "added-song-playlist"
 	SetAndPlaySong    = "set-and-play-song"
-	//add to frontend
-	EventSkipRequest = "skip-request"
-	EventSongSkipped = "song-skipped"
+	EventSkipRequest  = "skip-request"
+	EventSongSkipped  = "song-skipped"
+	FinalSongEnded    = "final-song-ended"
+	UserLeft          = "user-left"
 )
 
 // Define Event Struct and Event Handler
@@ -197,5 +198,11 @@ func SkipSongRequest(event Event, c *Client) error {
 	}
 
 	room.SendEventToAllClients(response)
+	return nil
+}
+
+func HandleUserLeaving(event Event, c *Client) error {
+	room := c.Manager.Rooms[c.RoomID]
+	room.UserLeftRoom()
 	return nil
 }

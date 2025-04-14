@@ -108,5 +108,23 @@ func (r *RoomData) HandleSongSkip() {
 		r.PlayList = r.PlayList[1:]
 
 		r.PrepareSongToPlay(&nextSong)
+	} else {
+		r.CurrentSong = nil
+
+		event := Event{
+			Type:    FinalSongEnded,
+			Payload: nil,
+		}
+
+		r.SendEventToAllClients(event)
 	}
+}
+
+func (r *RoomData) UserLeftRoom() {
+	event := Event{
+		Type:    UserLeft,
+		Payload: nil,
+	}
+
+	r.SendEventToAllClients(event)
 }
