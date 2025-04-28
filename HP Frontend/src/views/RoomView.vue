@@ -26,6 +26,7 @@ const player = ref<any>()
 const deviceId = ref<string | null>(null)
 const remainingTime = ref<number>(0)
 let timerInterval: ReturnType<typeof setInterval> | null = null
+const skipCount = ref<number>(0)
 
 declare global {
   interface Window {
@@ -161,10 +162,17 @@ const handleSocketMessage = (message: any) => {
 
     case 'final-song-ended':
       currentSong.value = null
+      player.value.pause().then(() => {
+        console.log('Paused!')
+      })
       if (timerInterval) {
         clearInterval(timerInterval)
         timerInterval = null
       }
+      break
+
+    case 'skip-request':
+      skipCount.value += 1
       break
 
     case 'set-and-play-song':
@@ -172,6 +180,8 @@ const handleSocketMessage = (message: any) => {
       queuedSongs.value = queuedSongs.value.filter((song) => song.id !== incomingSong.id)
       currentSong.value = incomingSong
       songPosition.value = 0
+
+      skipCount.value = 0
 
       if (currentSong.value?.duration_ms) {
         remainingTime.value = currentSong.value.duration_ms
@@ -383,6 +393,7 @@ const playSong = async () => {
                 <p class="text-slate-400 text-sm">{{ currentSong?.artists.join(', ') }}</p>
               </div>
             </div>
+            <p></p>
             <span class="text-white text-sm">
               {{ formatDuration(remainingTime) }}
             </span>
@@ -391,7 +402,9 @@ const playSong = async () => {
       </div>
     </div>
 
-    <div class="relative w-120 mt-8">
+    <p v-if="currentSong?.name" class="mt-2">Skip Song Votes: {{ skipCount }}</p>
+
+    <div class="relative w-120 mt-4">
       <div class="absolute inset-0 flex items-center">
         <div class="w-full border-t border-sky-500/100"></div>
       </div>

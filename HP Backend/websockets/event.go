@@ -193,9 +193,10 @@ func SkipSongRequest(event Event, c *Client) error {
 	if len(room.UserSkipRecord) > threshold {
 		room.SkipChan <- true
 		room.UserSkipRecord = SkipRecord{}
-	} else {
-		room.UserSkipRecord = append(room.UserSkipRecord, c.User.Id)
+
+		return nil
 	}
+	room.UserSkipRecord = append(room.UserSkipRecord, c.User.Id)
 
 	room.SendEventToAllClients(response)
 	return nil

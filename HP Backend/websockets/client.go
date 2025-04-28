@@ -43,7 +43,10 @@ func NewClient(connection *websocket.Conn, manager *Manager, RoomID string, user
 
 func (c *Client) ReadMessages() {
 	defer func() {
-		c.Manager.RemoveClient(c)
+		if _, ok := c.Manager.Rooms[c.RoomID]; ok {
+			c.Manager.RemoveClient(c)
+		}
+		// c.Manager.RemoveClient(c)
 	}()
 
 	err := c.Connection.SetReadDeadline(time.Now().Add(pongWait))
@@ -81,7 +84,10 @@ func (c *Client) ReadMessages() {
 
 func (c *Client) WriteMessages() {
 	defer func() {
-		c.Manager.RemoveClient(c)
+		if _, ok := c.Manager.Rooms[c.RoomID]; ok {
+			c.Manager.RemoveClient(c)
+		}
+		// c.Manager.RemoveClient(c)
 	}()
 
 	ticker := time.NewTicker(pingInterval)

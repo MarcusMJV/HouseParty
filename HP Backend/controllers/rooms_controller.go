@@ -12,8 +12,9 @@ import (
 )
 
 var manager *websockets.Manager
+
 func InitManager(m *websockets.Manager) {
-    manager = m
+	manager = m
 }
 
 func CreateNewRoom(context *gin.Context) {
@@ -30,12 +31,12 @@ func CreateNewRoom(context *gin.Context) {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not create room", "error": err.Error()})
 		return
 	}
-	
+
 	context.JSON(http.StatusCreated, gin.H{"message": "room created", "room": room})
 }
 
 func RetieveRooms(context *gin.Context) {
-	
+
 	publicRooms, userRoom, err := services.GetRooms(context.GetInt64("userId"))
 	if err != nil {
 		log.Println(err.Error())
@@ -54,10 +55,14 @@ func DeleteRoom(context *gin.Context) {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not delete room", "error": errorMessage})
 		return
 	}
-	
+
+	manager.Lock()
+	defer manager.Unlock()
+	delete(manager.Rooms, roomId)
+
 	room, err := services.DeleteRoomByID(roomId)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not retrive rooms", "error": err.Error()})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not delete room", "error": err.Error()})
 		return
 	}
 
@@ -67,7 +72,3 @@ func DeleteRoom(context *gin.Context) {
 func JoinRoom(context *gin.Context) {
 	manager.ServeWs()(context)
 }
-
-
-
-
