@@ -28,7 +28,7 @@ type SpotifyTokenObject struct {
 	UserID       int64  `json:"user_id"`
 }
 
-const redirectUrl = "http://localhost:5173/spotify/callback"
+var redirectUrl = os.Getenv("FRONTEND_URL")
 
 func (s *SpotifyTokenObject) SaveToken() error {
 
@@ -74,7 +74,7 @@ func (s *SpotifyTokenObject) UpdateToken() error {
 func GetTokenFromDB(hostId int64) (*SpotifyTokenObject, error) {
 	var token SpotifyTokenObject
 	row := storage.DB.QueryRow(storage.GetSpotifyToken, hostId)
-	err := row.Scan( &token.AccessToken, &token.TokenType, &token.Scope, &token.ExpiresIn, &token.RefreshToken, &token.TimeIssued, &token.UserID)
+	err := row.Scan(&token.AccessToken, &token.TokenType, &token.Scope, &token.ExpiresIn, &token.RefreshToken, &token.TimeIssued, &token.UserID)
 
 	if err == sql.ErrNoRows {
 		return nil, errors.New("token not found")
@@ -157,14 +157,12 @@ func SetSpotifyToken(code string, userId int64) (*SpotifyTokenObject, error) {
 		return nil, err
 	}
 
-	
-
 	return &tokenObject, nil
 }
 
 func GenerateSpotifyAuthRequest() (string, error) {
 
-	scope := "streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state" 
+	scope := "streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state"
 
 	state := generateRandomString(16)
 	clientID := os.Getenv("SPOTIFY_CLIENT_ID")
@@ -240,5 +238,3 @@ func RefreshToken(refreshToken string, userId int64) (*SpotifyTokenObject, error
 	}
 	return &tokenObject, nil
 }
-
-
