@@ -17,3 +17,9 @@ func LoadEnv() {
 func GetJWTKey() string {
 	return os.Getenv("SECRET_JWT_KEY")
 }
+
+func GetFrontendURL() string {
+	url := os.Getenv("FRONTEND_URL")
+
+	return url
+}

@@ -28,8 +28,6 @@ type SpotifyTokenObject struct {
 	UserID       int64  `json:"user_id"`
 }
 
-var redirectUrl = os.Getenv("FRONTEND_URL")
-
 func (s *SpotifyTokenObject) SaveToken() error {
 
 	deleteStmt, err := storage.DB.Prepare(storage.DeleteTokenQuery)
@@ -118,6 +116,8 @@ func SetSpotifyToken(code string, userId int64) (*SpotifyTokenObject, error) {
 		return nil, errors.New("missing spotify client id or client secret" + clientID + clientSecret)
 	}
 
+	redirectUrl := GetFrontendURL()
+
 	data := url.Values{}
 	data.Set("code", code)
 	data.Add("redirect_uri", redirectUrl)
@@ -161,6 +161,9 @@ func SetSpotifyToken(code string, userId int64) (*SpotifyTokenObject, error) {
 }
 
 func GenerateSpotifyAuthRequest() (string, error) {
+	redirectUrl := GetFrontendURL()
+
+	log.Println(redirectUrl)
 
 	scope := "streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state"
 
