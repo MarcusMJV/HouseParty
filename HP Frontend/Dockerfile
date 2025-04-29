@@ -15,9 +15,10 @@ FROM nginx:stable-alpine
 # Copy built files to nginx's public folder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx config (optional, explained below)
+# Optional: custom nginx config if you're using Vue Router history mode
 # COPY nginx.conf /etc/nginx/nginx.conf
 
-EXPOSE 8080
+# Expose port 80 (matches what nginx uses)
+EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
