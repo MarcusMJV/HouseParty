@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useUserStore } from '@/stores/user';
-import router from '@/router';
+import { ref } from 'vue'
+import { useUserStore } from '@/stores/user'
+import router from '@/router'
 
-const username = ref('');
-const email = ref('');
-const password = ref('');
-const errorMessage = ref('');
-const successMessage = ref('');
+const username = ref('')
+const email = ref('')
+const password = ref('')
+const errorMessage = ref('')
+const successMessage = ref('')
 
-const emit = defineEmits(['switch-to-login']);
+const emit = defineEmits(['switch-to-login'])
 
 const emitSwitchEvent = () => {
-  emit('switch-to-login');
-};
+  emit('switch-to-login')
+}
 
 const handleSubmit = async (e: Event) => {
-  e.preventDefault();
-  errorMessage.value = '';
-  successMessage.value = '';
+  e.preventDefault()
+  errorMessage.value = ''
+  successMessage.value = ''
 
   if (!username.value || !email.value || !password.value) {
-    errorMessage.value = 'All fields are required';
-    return;
+    errorMessage.value = 'All fields are required'
+    return
   }
 
   try {
@@ -34,32 +34,31 @@ const handleSubmit = async (e: Event) => {
       body: JSON.stringify({
         username: username.value,
         email: email.value,
-        password: password.value
+        password: password.value,
       }),
-    });
+    })
 
-    const data = await response.json();
+    const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(data.error || 'Signup failed');
+      throw new Error(data.error || 'Signup failed')
     }
 
-    successMessage.value = 'Signup successful! Redirecting...';
+    successMessage.value = 'Signup successful! Redirecting...'
 
-    username.value = '';
-    email.value = '';
-    password.value = '';
+    username.value = ''
+    email.value = ''
+    password.value = ''
 
-    const userStore = useUserStore();
-    userStore.setJwt(data.token);
-    userStore.setCredentials(data.user);
+    const userStore = useUserStore()
+    userStore.setJwt(data.token)
+    userStore.setCredentials(data.user)
 
-    router.push({ name: 'home' });
-
+    router.push({ name: 'home' })
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'An unexpected error occurred';
+    errorMessage.value = error instanceof Error ? error.message : 'An unexpected error occurred'
   }
-};
+}
 </script>
 
 <template>
@@ -106,11 +105,19 @@ const handleSubmit = async (e: Event) => {
           />
         </div>
 
-        <button type="submit" class="w-full mt-4 hover:bg-sky-500/100 border text-white font-semibold py-3 rounded-lg hover:bg-sky-600 transition duration-300">
+        <button
+          type="submit"
+          class="w-full mt-4 hover:bg-sky-500/100 border text-white font-semibold py-3 rounded-lg hover:bg-sky-600 transition duration-300"
+        >
           Sign Up
         </button>
       </form>
-      <p>Already have a account? <span @click="emitSwitchEvent" class="text-sky-500/100 hover:underline hover:cursor-pointer">Login</span></p>
+      <p>
+        Already have a account?
+        <span @click="emitSwitchEvent" class="text-sky-500/100 hover:underline hover:cursor-pointer"
+          >Login</span
+        >
+      </p>
     </div>
   </div>
 </template>
