@@ -27,6 +27,7 @@ const deviceId = ref<string | null>(null)
 const remainingTime = ref<number>(0)
 let timerInterval: ReturnType<typeof setInterval> | null = null
 const skipCount = ref<number>(0)
+const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL
 
 declare global {
   interface Window {
@@ -63,8 +64,7 @@ onMounted(() => {
 const joinRoom = (roomId: string) => {
   console.log('Joining room', roomId)
 
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const wsUrl = `${protocol}//localhost:8080/join/room/${roomId}?token=${user.jwt}`
+  const wsUrl = `${wsBaseUrl}/join/room/${roomId}?token=${user.jwt}`
 
   socket.value = new WebSocket(wsUrl)
 

@@ -8,6 +8,7 @@ const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
 const successMessage = ref('')
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 
 const emit = defineEmits(['switch-to-login'])
 
@@ -26,7 +27,7 @@ const handleSubmit = async (e: Event) => {
   }
 
   try {
-    const response = await fetch('http://localhost:8080/signup', {
+    const response = await fetch(`${apiBaseUrl}/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

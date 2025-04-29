@@ -1,80 +1,80 @@
 <script setup lang="ts">
-import { useUserStore } from '@/stores/user';
-import { ref } from 'vue';
-import router from '@/router';
+import { useUserStore } from '@/stores/user'
+import { ref } from 'vue'
+import router from '@/router'
 
-const password = ref('');
-const errorMessage = ref('');
-const nameField = ref('');
-const successMessage = ref('');
-let body = '';
+const password = ref('')
+const errorMessage = ref('')
+const nameField = ref('')
+const successMessage = ref('')
+let body = ''
+const apiBaseURL = import.meta.env.VITE_API_BASE_URL
 
-const emit = defineEmits(['switch-to-signup']);
+const emit = defineEmits(['switch-to-signup'])
 
 const emitSwitchEvent = () => {
-  emit('switch-to-signup');
-};
+  emit('switch-to-signup')
+}
 
 const isValidEmail = (email: string) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-  return re.test(email);
-};
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+  return re.test(email)
+}
 
 const handleSubmit = async (e: Event) => {
-  e.preventDefault();
-  errorMessage.value = '';
-  successMessage.value = '';
+  e.preventDefault()
+  errorMessage.value = ''
+  successMessage.value = ''
 
   if (!nameField.value || !password.value) {
-    errorMessage.value = 'All fields are required';
-    return;
+    errorMessage.value = 'All fields are required'
+    return
   }
 
   try {
-    if(isValidEmail(nameField.value)){
-        body = JSON.stringify({
-        username: "",
+    if (isValidEmail(nameField.value)) {
+      body = JSON.stringify({
+        username: '',
         email: nameField.value,
-        password: password.value
+        password: password.value,
       })
-    }else{
-        body = JSON.stringify({
+    } else {
+      body = JSON.stringify({
         username: nameField.value,
-        email: "",
-        password: password.value
+        email: '',
+        password: password.value,
       })
     }
 
-    const response = await fetch('http://localhost:8080/login', {
+    const response = await fetch(`${apiBaseURL}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: body,
-    });
+    })
 
-    const data = await response.json();
+    const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(data.error || 'Signup failed');
+      throw new Error(data.error || 'Signup failed')
     }
 
-    successMessage.value = 'Login successful! Redirecting...';
+    successMessage.value = 'Login successful! Redirecting...'
 
-    nameField.value = '';
-    password.value = '';
+    nameField.value = ''
+    password.value = ''
 
-    const userStore = useUserStore();
-    userStore.setJwt(data.token);
+    const userStore = useUserStore()
+    userStore.setJwt(data.token)
     console.log(data.user)
-    userStore.setCredentials(data.user);
+    userStore.setCredentials(data.user)
 
-    router.push({ name: 'home' });
-
+    router.push({ name: 'home' })
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'An unexpected error occurred';
+    errorMessage.value = error instanceof Error ? error.message : 'An unexpected error occurred'
   }
-};
+}
 </script>
 
 <template>
@@ -110,11 +110,19 @@ const handleSubmit = async (e: Event) => {
           />
         </div>
 
-        <button type="submit" class="w-full mt-4 hover:bg-sky-500/100 border text-white font-semibold py-3 rounded-lg hover:bg-sky-600 transition duration-300">
+        <button
+          type="submit"
+          class="w-full mt-4 hover:bg-sky-500/100 border text-white font-semibold py-3 rounded-lg hover:bg-sky-600 transition duration-300"
+        >
           Login
         </button>
       </form>
-      <p>Don't have a account? <span @click="emitSwitchEvent" class="text-sky-500/100 hover:underline hover:cursor-pointer">Sign Up</span></p>
+      <p>
+        Don't have a account?
+        <span @click="emitSwitchEvent" class="text-sky-500/100 hover:underline hover:cursor-pointer"
+          >Sign Up</span
+        >
+      </p>
     </div>
   </div>
 </template>
