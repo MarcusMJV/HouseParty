@@ -12,10 +12,13 @@ RUN npm run build
 # 2. Serve the built files using nginx
 FROM nginx:stable-alpine
 
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
+
 # Copy built static files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy the custom nginx config
+# Copy our own nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
