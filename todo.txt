@@ -1,3 +1,0 @@
-add docker containers
-fix create room error
-get hosted fro testing 
