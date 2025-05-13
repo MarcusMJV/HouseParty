@@ -39,6 +39,7 @@ type JoinedRoomEvent struct {
 	CurrentSong  *models.Song  `json:"current_song"`
 	ApiToken     string        `json:"api_token"`
 	SongPosition int64         `json:"song_position"`
+	HostID       int64         `json:"host_id"`
 }
 type SongChangeEvent struct {
 	PlayList    []models.Song `json:"playlist"`
@@ -96,6 +97,7 @@ func JoinRoom(event Event, c *Client) error {
 		CurrentSong:  room.CurrentSong,
 		ApiToken:     apiToken.AccessToken,
 		SongPosition: songPosition.Milliseconds(),
+		HostID:       room.HostID,
 	}
 
 	joinedPayload, err := json.Marshal(joinedEvent)

@@ -17,6 +17,7 @@ const currentSong = ref<Song | null>()
 const queuedSongs = ref<Song[]>([])
 const showSearchPanel = ref(false)
 const searchQuery = ref('')
+const isHost = ref(false)
 const songPosition = ref<number>(0)
 const searchResults = ref<Song[]>([])
 const containerRef = ref<HTMLElement | null>(null)
@@ -188,7 +189,10 @@ const handleSocketMessage = (message: any) => {
         startCountdownTimer()
       }
 
-      playSong()
+      if (isHost.value) {
+        playSong()
+      }
+
       break
 
     case 'added-song-playlist':
@@ -196,8 +200,11 @@ const handleSocketMessage = (message: any) => {
       break
 
     case 'room-information':
-      apiToken = message.payload.api_token
-      initSpotifyPlayer()
+      if (message.payload.host_id === user.credentials.id) {
+        apiToken = message.payload.api_token
+        isHost.value = true
+        initSpotifyPlayer()
+      }
 
       if (message.payload.current_song?.uri != '') {
         currentSong.value = message.payload.current_song
