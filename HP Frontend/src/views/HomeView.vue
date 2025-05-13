@@ -92,6 +92,8 @@ const getRooms = async () => {
     })
 
     if (!response.ok) {
+      userStore.clearUser()
+      router.push({ name: 'signup-or-login' })
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
