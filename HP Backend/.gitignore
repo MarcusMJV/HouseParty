@@ -1,5 +1,4 @@
 .env
-api.db
 *.log
 *.exe
 *.out
