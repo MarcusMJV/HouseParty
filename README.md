@@ -2,16 +2,16 @@
 
 House Party is a collaborative music-listening experience where users can connect their Spotify account, create or join a room, and queue songs to a shared playlist in real-time. Think of it as a live, crowd-controlled radio station where everyone in the room helps shape the vibe.
 
-> 🚀 **Live Demo:** [hp-frontend.up.railway.app/signup-or-login](https://hp-frontend.up.railway.app/signup-or-login)  
+> 🚀 **Live Demo:** [hp-frontend.up.railway.app/signup-or-login](https://hp-frontend.up.railway.app/)  
 > 👤 **Demo Account:**  
 > &nbsp;&nbsp;&nbsp;&nbsp;**Username:** `demoUser`  
 > &nbsp;&nbsp;&nbsp;&nbsp;**Password:** `1234`
 >
-> 🛈 **Please note:** You must log in with the **demo account** to hear music playback in the demo room, because that account is currently the **host device**.
+> 🛈 **Please note:** Since this app currently uses a **free Spotify developer account**, only pre-approved users added via the Spotify Developer Dashboard can play music through the app.
 >
-> - You’re welcome to create your own account and connect your Spotify account.
-> - If you create your own room, your device will become the host and playback will work on your account.
-> - If you **join the demo room with a different account**, you will be able to **queue songs**, but you **won’t hear any music** as playback only happens on the host device.
+> - The `demoUser` account is the only account added for playback and acts as the **host device**.
+> - If you log in with your own Spotify account, you can explore the app and **queue songs**, but **you won't hear any music** unless you're logged in as `demoUser`.
+> - This limitation is in place for **proof-of-concept purposes** and will be lifted in future versions with proper production setup.
 
 ## 🔑 Features
 
