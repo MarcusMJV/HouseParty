@@ -25,7 +25,7 @@ House Party is a collaborative music-listening experience where users can connec
 ## 🛠️ Tech Stack
 
 - **Backend:** Go (Golang)
-- **Frontend:** [your frontend tech, e.g., Vue.js / React]
+- **Frontend:** Vue.js
 - **Spotify API:** For authentication and playback
 - **WebSockets:** For real-time communication
 - **Database:** SQLite (development only)
